@@ -1,9 +1,12 @@
 \documentclass[12pt]{article}
 \usepackage[pdftex]{graphicx}
-\usepackage[english,german]{babel}
+\usepackage{cite} 
+\usepackage[german,english]{babel}
+\usepackage[round]{natbib}
+
 
 \begin{document}
-
+\bibliographystyle{unsrtnat}
 \input{./title.tex}
 \renewcommand{\contentsname}{Table of Contents}
 \tableofcontents
@@ -13,7 +16,7 @@
 
 \subsection{Motivation}
 %write here
-texttexttext
+%example citation: texttexttext\citep[p. 4]{mueller2000}
 
 \subsection{Challanges/ Concepts}
 %write here
@@ -59,4 +62,11 @@ texttexttext
 \subsection{Summary}
 %write here
 texttexttext
+
+
+
+
+\newpage
+\medskip
+\bibliography{literatureDB}
 \end{document}
