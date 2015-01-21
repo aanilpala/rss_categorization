@@ -1,0 +1,14 @@
+http://feeds.bbci.co.uk/news/politics/rss.xml?edition=uk politics 1421796121000
+http://feeds.bbci.co.uk/news/business/rss.xml business 1421797387000
+http://feeds.bbci.co.uk/news/health/rss.xml?edition=uk health 1421766552000
+http://feeds.bbci.co.uk/news/technology/rss.xml?edition=uk technology 1421794475000
+http://feeds.bbci.co.uk/news/entertainment_and_arts/rss.xml?edition=uk entertainment 1421790817000
+http://feeds.bbci.co.uk/sport/0/football/rss.xml?edition=int sports 1421796640000
+http://feeds.bbci.co.uk/sport/0/athletics/rss.xml sports 1421771509000
+http://www.cnet.com/rss/news/ technology 1421797006000
+http://rss.cnn.com/rss/edition_football.rss sports 1421780485000
+http://rss.cnn.com/rss/money_news_international.rss business 1421795859000
+http://rss.cnn.com/rss/edition_technology.rss technology 1421784867000
+http://rss.cnn.com/rss/edition_sport.rss sports 1421781685000
+http://feeds.washingtonpost.com/rss/business business 1421797389000
+http://feeds.washingtonpost.com/rss/entertainment entertainment 1421797761000
