@@ -1,4 +1,4 @@
-package feed.reader;
+package feed.util;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -12,7 +12,7 @@ import javax.xml.stream.events.Characters;
 import javax.xml.stream.events.XMLEvent;
 
 import feed.model.Feed;
-import feed.model.FeedMessage;
+import feed.model.FeedItem;
 
 public class RSSFeedParser {
   static final String TITLE = "title";
@@ -36,7 +36,7 @@ public class RSSFeedParser {
     }
   }
 
-  public Feed readFeed() {
+  public Feed readFeed(String topic) {
     Feed feed = null;
     try {
       boolean isFeedHeader = true;
@@ -97,13 +97,14 @@ public class RSSFeedParser {
           }
         } else if (event.isEndElement()) {
           if (event.asEndElement().getName().getLocalPart() == (ITEM)) {
-            FeedMessage message = new FeedMessage();
+            FeedItem message = new FeedItem();
             message.setAuthor(author);
             message.setDescription(description);
             message.setGuid(guid);
             message.setLink(link);
             message.setTitle(title);
             message.setPubDate(pubdate);
+            message.setCategory(topic);
             feed.getMessages().add(message);
             event = eventReader.nextEvent();
             continue;

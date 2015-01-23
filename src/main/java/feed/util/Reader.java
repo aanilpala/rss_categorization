@@ -1,16 +1,14 @@
-package feed.reader;
+package feed.util;
 
 import java.io.FileWriter;
 import java.io.IOException;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.List;
 import java.util.Locale;
 
 import feed.model.Feed;
-import feed.model.FeedMessage;
+import feed.model.FeedItem;
 
 public class Reader {
 
@@ -24,21 +22,21 @@ public class Reader {
 		this.topic = topic;
 		this.lastUpdate = lastUpdate;
 		RSSFeedParser parser = new RSSFeedParser(feedUrl);
-	    this.feed = parser.readFeed();
+	    this.feed = parser.readFeed(topic);
 	}
 	
 	public void sinkItems(FileWriter fw) {
 		
 		
 		long max = Long.MIN_VALUE;
-		for (FeedMessage message : feed.getMessages()) {
+		for (FeedItem message : feed.getMessages()) {
 			
 			DateFormat format = new SimpleDateFormat("E, dd MMM yyyy HH:mm:ss zzz", Locale.ENGLISH);
 			
 			try {
 				long pubdate = format.parse(message.getPubDate()).getTime();
 				if (pubdate > lastUpdate) {
-					fw.write(message.toString() + topic + "\n");
+					fw.write(message.toString() + "\n");
 					if(pubdate > max) {
 						max = pubdate;
 					}
