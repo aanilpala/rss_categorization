@@ -12,11 +12,14 @@ import java.util.List;
 import java.util.Locale;
 
 import org.apache.spark.SparkConf;
+import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.api.java.function.Function;
+import org.apache.spark.api.java.function.Function2;
 
+import scala.Tuple2;
 import scala.Tuple3;
 import feed.model.FeedItem;
 
@@ -63,6 +66,9 @@ public class FeedCaster {
 		JavaSparkContext ctx = new JavaSparkContext(sparkConf);	
 		JavaRDD<String>  lines = ctx.textFile("./src/main/resources/rss-arch.txt");
 		
+		
+	
+		
 		JavaRDD<Tuple3<Long, String, String>> labeledText = lines.map(new Function<String, Tuple3<Long, String, String>>() {
 
 			@Override
@@ -107,8 +113,35 @@ public class FeedCaster {
 		});
 		
 		
+		JavaPairRDD<Integer, Tuple3<Long, String, String>> keyedFilteredLabeledText = filteredLabeledText.keyBy(new Function<Tuple3<Long,String,String>, Integer>() {
+
+			@Override
+			public Integer call(Tuple3<Long, String, String> tuple)
+					throws Exception {
+				return tuple._2().hashCode();
+			}
+		});
 		
-		JavaRDD<Tuple3<Long, String, String>> sortedFeedItems = filteredLabeledText.distinct().sortBy(new Function<Tuple3<Long,String,String>, Long>() {
+		JavaPairRDD<Integer, Tuple3<Long, String, String>> distinctKeyedFilteredLabeled = keyedFilteredLabeledText.foldByKey(null, new Function2<Tuple3<Long,String,String>, Tuple3<Long,String,String>, Tuple3<Long,String,String>>() {
+			
+			@Override
+			public Tuple3<Long, String, String> call(Tuple3<Long, String, String> t1,
+					Tuple3<Long, String, String> t2) throws Exception {
+				return t2;
+			}
+		});
+		
+		JavaRDD<Tuple3<Long, String, String>> distinctFilteredLabeledText = distinctKeyedFilteredLabeled.map(new Function<Tuple2<Integer,Tuple3<Long,String,String>>, Tuple3<Long,String,String>>() {
+
+			@Override
+			public Tuple3<Long, String, String> call(Tuple2<Integer, Tuple3<Long, String, String>> tuple)
+					throws Exception {
+				return tuple._2;
+			}
+		});
+		
+		
+		JavaRDD<Tuple3<Long, String, String>> sortedFeedItems = distinctFilteredLabeledText.sortBy(new Function<Tuple3<Long,String,String>, Long>() {
 
 			@Override
 			public Long call(Tuple3<Long, String, String> tuple) throws Exception {

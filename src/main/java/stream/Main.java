@@ -17,7 +17,7 @@ public class Main {
 		
 		SparkConf conf = new SparkConf().setAppName("streamer-playaround").setMaster("local[2]");
 		
-	    JavaStreamingContext ssc = new JavaStreamingContext(conf, new Duration(5000));
+	    JavaStreamingContext ssc = new JavaStreamingContext(conf, new Duration(15000));
 
 	    ssc.checkpoint("./src/main/resources/checkpoint");
 	    	    
