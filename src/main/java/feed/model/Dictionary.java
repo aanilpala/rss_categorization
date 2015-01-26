@@ -8,10 +8,10 @@ import java.util.HashMap;
  */
 public class Dictionary {
 
-    HashMap<String, Integer> dictionary;
-    String source;
-    Integer lastIndex;
-    Integer size;
+    private HashMap<String, Integer> dictionary;
+    private String source;
+    private Integer lastIndex;
+    private Integer size;
 
     // constructs dictionary from previous rss-feeds stored in a file by passing file name
     public Dictionary(String pathToFile)  {
