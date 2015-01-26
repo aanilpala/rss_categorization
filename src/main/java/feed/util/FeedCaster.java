@@ -17,6 +17,7 @@ import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.api.java.function.Function;
 
+import scala.Tuple3;
 import feed.model.FeedItem;
 
 public class FeedCaster {
@@ -41,11 +42,11 @@ public class FeedCaster {
 	}
 	
 	
-	public void castList(List<FeedItem> feedItems) {
-		for(FeedItem each : feedItems) {
+	public void castList(List<Tuple3<Long, String, String>> items) {
+		for(Tuple3<Long, String, String> each : items) {
 			out.println(each.toString());
 			try {
-				Thread.sleep(100);
+				Thread.sleep(1000);
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
@@ -55,67 +56,74 @@ public class FeedCaster {
 	public static void main(String[] args) {
 		
 		
-		//FeedRefiner feedRefiner = new FeedRefiner("./src/main/resources/rss-arch.txt");
-		
-		SparkConf sparkConf = new SparkConf().setAppName("FeedSorter").setMaster("local");
+		SparkConf sparkConf = new SparkConf().setAppName("FeedRefiner").setMaster("local");
 		
 		sparkConf.set("spark.hadoop.validateOutputSpecs", "false");
 		
-	    JavaSparkContext ctx = new JavaSparkContext(sparkConf);	
-		JavaRDD<String> lines = ctx.textFile("./src/main/resources/rss-arch.txt");
+		JavaSparkContext ctx = new JavaSparkContext(sparkConf);	
+		JavaRDD<String>  lines = ctx.textFile("./src/main/resources/rss-arch.txt");
 		
-		JavaRDD<FeedItem> feedItems = lines.flatMap(new FlatMapFunction <String, FeedItem>() {
-			
+		JavaRDD<Tuple3<Long, String, String>> labeledText = lines.map(new Function<String, Tuple3<Long, String, String>>() {
+
 			@Override
-			public Iterable<FeedItem> call(String line) {
-				
-				FeedItem feedItem = null;
+			public Tuple3<Long, String, String> call(String line)
+					throws Exception {
 				String tokens[] = line.split(",");
+				String text, category;
 				
 				if(tokens.length > 5) {
+					
+					text = tokens[3];
+					
 					for(int ctr = 5; ctr < tokens.length-1; ctr++){
-						tokens[4] += " " + tokens[ctr]; 
+						text += " " + tokens[ctr]; 
 					}
 					
-					tokens[5] = tokens[tokens.length-1];
+					category = tokens[tokens.length-1];
 					
-					if(tokens[4].split(" ").length < 10) return Arrays.asList();
-					
-					
-					feedItem = new FeedItem(tokens[1].trim(), tokens[2].trim().replace(",", " "), tokens[3].trim().replace(",", " "), tokens[4].trim().replace(",", " "), tokens[5].trim().replace(",", " "));
 				}
 				else {
-					if(tokens[3].split(" ").length < 10) return Arrays.asList();
-					feedItem = new FeedItem(tokens[1].trim().replace(",", " "), tokens[2].trim().replace(",", " "), tokens[3].trim().replace(",", " "), " ", tokens[4].trim().replace(",", " "));
+					
+					text = tokens[3];
+					category = tokens[4];
 				}
 					
+				DateFormat format = new SimpleDateFormat("dd MMM yyyy HH:mm:ss zzz", Locale.ENGLISH);
 				
-				
-				return Arrays.asList(feedItem);
+				return new Tuple3<Long, String, String>(format.parse(tokens[1]).getTime(), text.replace(",", " "), category.trim());
 			}
-			
-			
 		});
 		
-		List<FeedItem> sortedFeedItems = feedItems.distinct().sortBy(new Function<FeedItem, Long>() {
-
-			DateFormat format = new SimpleDateFormat("dd MMM yyyy HH:mm:ss zzz", Locale.ENGLISH);
-			
-			@Override
-			public Long call(FeedItem item) throws Exception {
-				return format.parse(item.getPubDate()).getTime();
-			}
-			
-			
-		}, true, 1).collect();
 		
-		ctx.close();
+		
+		JavaRDD<Tuple3<Long, String, String>> filteredLabeledText = labeledText.filter(new Function<Tuple3<Long,String,String>, Boolean>() {
+
+			@Override
+			public Boolean call(Tuple3<Long, String, String> tuple) throws Exception {
 				
-		//List<FeedItem> refinedItems = feedRefiner.getRefinedItems();
+				if(tuple._2().split(" |,").length < 10) return false;
+				else return true;
+			}
+		});
+		
+		
+		
+		JavaRDD<Tuple3<Long, String, String>> sortedFeedItems = filteredLabeledText.distinct().sortBy(new Function<Tuple3<Long,String,String>, Long>() {
+
+			@Override
+			public Long call(Tuple3<Long, String, String> tuple) throws Exception {
+				return tuple._1();
+			}
+		}, true, 1);
+		
+		
+		sortedFeedItems.saveAsTextFile("./src/main/resources/refined");
 		
 		FeedCaster feedCaster = new FeedCaster("localhost", 9999);
 		
-		feedCaster.castList(sortedFeedItems);
+		feedCaster.castList(sortedFeedItems.collect());
+		
+		ctx.close();
 		
 		
 	}

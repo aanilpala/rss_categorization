@@ -27,8 +27,7 @@ public class Main {
 	    //JavaPairInputDStream<Long, String> aa = ssc.fileStream("./src/main/resources/refined");	    
 	   
 	    
-	    
-	    
+	 
 	    stream.print();
 	    ssc.start();
 	    ssc.awaitTermination();
