@@ -11,6 +11,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
@@ -46,28 +48,33 @@ public class FeedCaster {
 	
 	
 	public void castList(List<Tuple3<Long, String, String>> items) {
+		Long lastStreamed = 0L, waitingTime;
 		for(Tuple3<Long, String, String> each : items) {
-			out.println(each.toString());
+			if(lastStreamed != 0) waitingTime = (each._1() - lastStreamed)/60;  // This means in manual streaming we stream 60 times faster than the real data-rate of the RSS Feeds
+			else waitingTime = 10L;
 			try {
-				Thread.sleep(1000);
+				Thread.sleep(waitingTime);
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
+			out.println(each.toString());
+			lastStreamed = each._1();
+			
 		}
 	}
 	
 	public static void main(String[] args) {
 		
-		
 		SparkConf sparkConf = new SparkConf().setAppName("FeedRefiner").setMaster("local");
+		
+		// disabling default verbouse mode of the loggers
+		Logger.getLogger("org").setLevel(Level.FATAL);
+		Logger.getLogger("akka").setLevel(Level.FATAL);
 		
 		sparkConf.set("spark.hadoop.validateOutputSpecs", "false");
 		
 		JavaSparkContext ctx = new JavaSparkContext(sparkConf);	
 		JavaRDD<String>  lines = ctx.textFile("./src/main/resources/rss-arch.txt");
-		
-		
-	
 		
 		JavaRDD<Tuple3<Long, String, String>> labeledText = lines.map(new Function<String, Tuple3<Long, String, String>>() {
 
@@ -107,14 +114,15 @@ public class FeedCaster {
 			@Override
 			public Boolean call(Tuple3<Long, String, String> tuple) throws Exception {
 				
-				if(tuple._2().split(" |,").length < 10) return false;
+				if(tuple._2().split(" |,").length < 10) return false; // Reject Feed Items with too less words
+				if(tuple._1() < 1421236800000L) return false;  // Reject Feed Items published before the 14th January, 12:00 GMT -data is too sparse prior to this point in time.
 				else return true;
 			}
 		});
 		
 		
 		JavaPairRDD<Integer, Tuple3<Long, String, String>> keyedFilteredLabeledText = filteredLabeledText.keyBy(new Function<Tuple3<Long,String,String>, Integer>() {
-
+			
 			@Override
 			public Integer call(Tuple3<Long, String, String> tuple)
 					throws Exception {

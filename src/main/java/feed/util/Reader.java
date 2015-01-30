@@ -43,7 +43,8 @@ public class Reader {
 				}
 					    
 			} catch (ParseException | IOException e) {
-				e.printStackTrace();
+				//e.printStackTrace();
+				continue;
 			}
 		 
 		}
