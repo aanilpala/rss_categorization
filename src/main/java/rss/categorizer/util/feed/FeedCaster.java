@@ -18,7 +18,7 @@ import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.Function2;
 
-import rss.categorizer.config.TimeConversion;
+import rss.categorizer.config.Time;
 import scala.Tuple2;
 import scala.Tuple3;
 
@@ -47,7 +47,7 @@ public class FeedCaster {
 	public void castList(List<Tuple3<Long, String, String>> items) {
 		Long lastStreamed = 0L, waitingTime;
 		for(Tuple3<Long, String, String> each : items) {
-			if(lastStreamed != 0) waitingTime = (each._1() - lastStreamed) / TimeConversion.flow_rate;
+			if(lastStreamed != 0) waitingTime = (each._1() - lastStreamed) / Time.scaling_factor;
 			else waitingTime = 10L;
 			try {
 				Thread.sleep(waitingTime);

@@ -18,7 +18,6 @@ import org.apache.spark.api.java.function.PairFunction;
 import org.apache.spark.api.java.function.VoidFunction;
 import org.apache.spark.rdd.RDD;
 import org.apache.spark.streaming.Duration;
-import org.apache.spark.streaming.Time;
 import org.apache.spark.streaming.api.java.JavaDStream;
 import org.apache.spark.streaming.api.java.JavaInputDStream;
 import org.apache.spark.streaming.api.java.JavaPairDStream;
@@ -29,7 +28,7 @@ import org.apache.log4j.Logger;
 
 import com.google.common.base.Optional;
 
-import rss.categorizer.config.TimeConversion;
+import rss.categorizer.config.Time;
 import rss.categorizer.model.DictionaryEntry;
 import scala.Tuple2;
 import scala.Tuple3;
@@ -39,10 +38,10 @@ public class Streamer {
 
 	//public static Long window_duration = 2*TimeConversion.an_hour;
 	//public static Long sliding_interval= 2*TimeConversion.an_hour;
-	public static Long batch_interval = 6*TimeConversion.an_hour;
+	public static Long batch_interval = 6*Time.an_hour;
 	
-	public static Long training_dur = 6*TimeConversion.an_hour;
-	public static Long training_interval = 24*TimeConversion.an_hour;
+	public static Long training_dur = 6*Time.an_hour;
+	public static Long training_interval = 24*Time.an_hour;
 	
 	public static void main(String[] args) {
 		
@@ -84,7 +83,7 @@ public class Streamer {
 
 			@Override
 			public Boolean call(Tuple3<Long, String,String> tuple) throws Exception {
-				if((tuple._1()/TimeConversion.flow_rate % training_interval) < training_dur) return true;
+				if((tuple._1()/Time.scaling_factor % training_interval) < training_dur) return true;
 				else return false;
 				//return false;
 			}
@@ -101,10 +100,12 @@ public class Streamer {
 				
 				Set<String> uniqueTerms = new HashSet<String>(Arrays.asList(terms)); // we don't need tf for the dictionary
 
+				Integer batch_num = (int) ((Math.floor((t._1() - Time.start_point) / (training_interval*Time.scaling_factor))));
 				
 				for(String term : uniqueTerms) {
 					if(term.length() == 0) continue;
-					DictionaryEntry dictionaryEntry = new DictionaryEntry(term);
+					
+					DictionaryEntry dictionaryEntry = new DictionaryEntry(term, batch_num);
 					Tuple2<Integer, DictionaryEntry> dictionaryStreamEntry = new Tuple2<Integer, DictionaryEntry>(dictionaryEntry.getIndex(), dictionaryEntry);
 					
 					bag.add(dictionaryStreamEntry);
@@ -126,36 +127,7 @@ public class Streamer {
 			}
 		});
 	    
-	    
-	    
-//	    final ArrayList<DictionaryEntry> temp = new ArrayList<DictionaryEntry>();
-//	    
-//	    raw_dictionary_stream.foreachRDD(new Function<JavaPairRDD<Integer,DictionaryEntry>, Void>() {
-//
-//			@Override
-//			public Void call(JavaPairRDD<Integer, DictionaryEntry> v1)
-//					throws Exception {
-//				v1.foreach(new VoidFunction<Tuple2<Integer,DictionaryEntry>> () {
-//
-//					@Override
-//					public void call(Tuple2<Integer, DictionaryEntry> t)
-//							throws Exception {
-//						temp.add(t._2);
-//						
-//					}
-//					
-//				});
-//				return null;
-//			}
-//	    	
-//	    	
-//		});
-//	    
-//	    
-//	    for(DictionaryEntry each : temp) {
-//	    	System.out.println(each);
-//	    }
-	    
+//	    int cur_batch_num = 0;
 	    JavaPairDStream<Integer, DictionaryEntry> accumulated_dictionary_stream = dictionary_stream.updateStateByKey(new Function2<List<DictionaryEntry>, Optional<DictionaryEntry>, Optional<DictionaryEntry>>() {
 
 			@Override
@@ -163,13 +135,21 @@ public class Streamer {
 					Optional<DictionaryEntry> state) throws Exception {
 				
 				if(state.isPresent()) {
-					state.get().incrementDfBy(new_entries.size());
-					return Optional.of(state.get());
+					
+					if(new_entries.size() == 0) return state;
+					
+					else {
+						DictionaryEntry de = state.get();
+						de.updateBatch(new_entries.get(0).getBatchNumber(), new_entries.size()); 
+						return Optional.of(de);
+					}
+					
+					
 				}
 				else {
-					DictionaryEntry dict_entry = new_entries.get(0);
-					dict_entry.incrementDfBy(new_entries.size()-1);
-					return Optional.of(dict_entry);
+					DictionaryEntry de = new_entries.get(0);
+					de.updateBatch(new_entries.get(0).getBatchNumber(), new_entries.size()-1); 
+					return Optional.of(de);
 				}
 				
 				
@@ -188,12 +168,9 @@ public class Streamer {
 			public Void call(JavaPairRDD<Integer, DictionaryEntry> v1)
 					throws Exception {
 				List<Tuple2<Integer, DictionaryEntry>> temp = v1.collect();
-				
+
 				System.out.println(temp.size());
 				
-//				for(Tuple2<Integer, DictionaryEntry> each : temp) {
-//					System.out.println(each.toString());
-//				}
 				return null;
 				
 				}
@@ -208,9 +185,6 @@ public class Streamer {
 				
 				System.out.println(temp.size());
 				
-//				for(Tuple2<Integer, DictionaryEntry> each : temp) {
-//					System.out.println(each.toString());
-//				}
 				return null;
 				
 			}
@@ -221,7 +195,7 @@ public class Streamer {
 	    //dictionary_stream.print();
 	    
 	    
-	    tuple_stream.print();
+	    //tuple_stream.print();
 	    ssc.start();
 	    ssc.awaitTermination();
 	   
