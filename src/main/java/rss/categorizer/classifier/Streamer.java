@@ -9,17 +9,11 @@ import java.util.Set;
 
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
-import org.apache.spark.api.java.JavaRDD;
-import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.api.java.function.PairFlatMapFunction;
-import org.apache.spark.api.java.function.PairFunction;
-import org.apache.spark.api.java.function.VoidFunction;
-import org.apache.spark.rdd.RDD;
 import org.apache.spark.streaming.Duration;
 import org.apache.spark.streaming.api.java.JavaDStream;
-import org.apache.spark.streaming.api.java.JavaInputDStream;
 import org.apache.spark.streaming.api.java.JavaPairDStream;
 import org.apache.spark.streaming.api.java.JavaReceiverInputDStream;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
@@ -170,6 +164,10 @@ public class Streamer {
 				List<Tuple2<Integer, DictionaryEntry>> temp = v1.collect();
 
 				System.out.println(temp.size());
+				
+//				for(Tuple2<Integer, DictionaryEntry> each : temp) {
+//					System.out.println(each._2.toString());
+//				}
 				
 				return null;
 				

@@ -3,6 +3,7 @@ package rss.categorizer.model;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.commons.collections.map.HashedMap;
 
@@ -41,7 +42,16 @@ public class DictionaryEntry implements Serializable {
 	
 	@Override
 	public String toString() {
-		return term + ", " + df;
+		
+		String map_print = "b2df mapping: ";
+		
+		Set<Integer> keys = batch2df_map.keySet();
+		
+		for(Integer key : keys) {
+			map_print += key + ":" + batch2df_map.get(key) + ", ";
+		}
+		
+		return term + ", " + map_print;
 	}
 
 	public void incrementDf() {
