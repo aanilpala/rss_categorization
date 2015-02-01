@@ -22,11 +22,15 @@
 %write here
 %example citation: texttexttext\citep[p. 4]{mueller2000}
 \begin{spacing}{1.2}
-In Text Classification Na\"ive Bayes Classifiers are popular due to their simplicity and find application in the field of spam email detection and descovery of specified web content \citep[p. 225]{ertel2008}. Classifier aim the prediction of a categorie like spam or ham on the basis of previous examples. This can be easily realized with a probalistic classifier like Na\"ive Bayes assuming that the data distribution is static over time, all data is always accessible and query time does not play a major role. For adapting real world problems and their dynamics this might not be sufficient. The developement of the internet and the need of processing huge amounts of available data and answering queries in time-critical situations needs to be taken in account for handeling model construction and model updating. In Online Machine Learning different methods for dealing with sequentially arriving data and updating the model with new incoming observations exist. This is called "Concept Drift" and referes to the problem of the variation of statistical properties \citep{astudillo2013}. Also aspects of scalability might to be considered since Concept Drift occurs mainly in situations of large data qantities arriving via stream \citep[p. 4]{tsymbal2004} and the underlying data processing system is distibuted.   
+In Text Classification Na\"ive Bayes Classifiers are popular due to their simplicity and find application in the field of spam email detection and descovery of specified web content \citep[p. 225]{ertel2008}. Classifier aim the prediction of a categorie like spam or ham on the basis of previous examples. This can be easily realized with a probalistic classifier like Na\"ive Bayes assuming that the data distribution is static over time, all data is always accessible and query time does not play a major role. For adapting real world problems and their dynamics this might not be sufficient. The developement of the internet and the need of processing huge amounts of available data and answering queries in time-critical situations needs to be taken in account for handeling model construction and model updating. In Online Machine Learning different methods for dealing with sequentially arriving data and updating the model with new incoming observations exist. This is called "Concept Drift" and referes to the problem of the variation of statistical properties \citep{astudillo2013}. Also aspects of scalability might be considered since Concept Drift occurs mainly in situations of large data qantities arriving via stream \citep[p. 4]{tsymbal2004} and the underlying data processing system is distibuted.   
 
-In this report we are using RSS feeds from BCC for classification on a distributed system. Focus is the evaluation of several Na\"ive Bayes classifiers which implement the online learning paradigm by using streaming techniques.  The evalutation concentrates on the handling of Concept Drift. In a first theoretically part of this report challanges, concepts and methods as well as evaluation measures are described. The second part consits of the explanation of our implementation using SPARK to show how the different classifiers work. Furthermore the evaluation of their performances are analysed and presented.
+In this report we are using RSS feeds from BCC for classification on a distributed system. Focus is the evaluation of several Na\"ive Bayes classifiers which implement the online learning paradigm by using streaming techniques.  The evalutation concentrates on the handling of Concept Drift. In a first theoretically part of this report challanges, concepts and methods as well as evaluation measures are described. The second part consits of the explanation of our implementation using SPARK to show how the different classifier approaches work. Furthermore the evaluation of their performances are analysed and presented.
 
 \end{spacing}
+
+\subsection{Na\"ive Bayes classifier}
+
+As mentioned Na\"ive Bayes classifier are probalistic classifiers which are simple but effictive in text classification. They operate on the basis of probabilities. 
 
 \subsection{Challanges/ Concepts}
 %write here
@@ -42,11 +46,7 @@ texttexttext
 
 \subsubsection{Distributed Systems}
 %write here
-With the Internet data availability seems not to constitude a problem anymore. Aspects of storing, processing and mining those data amounts were reconsidered in the past years and led to the raise of new technologies and the mostly unloved buzzword Big Data. A single CPU can not accomblish the processing of those data quantities, especially if the algorithms are computationally intensive like most of the prediction algorithms from the field of Machine Learning which are widely used in Datamining. To handle that  the parallel execution of calculations is spread over a cluster of machines with a underlying system responsible for scheduling, load balance and fault tolerance \citep[p. 10]{zaharia2010} . The forerunner of this cluster model was Hadoop, now several frameworks which extend this work are developed and allow wider functionality and significant performance improvements. Even though those frameworks are centered around data processing and ease of use software developers need to be aware of the distributed nature of such systems and parallel computation execution. This might be clear to those coming from a Distributed Systems background but challanging for data engineers or developers related to Datamining.  
-
-
- Processing and stroring of those large amounts of data can not accomblishedled by a single CPU to the raise of    
-Large amounts of data, processing algorithms, ML intense calculation, single machine many nodes, query distribution vs. the other one, HDFS split partitions,  distributed algorithms  
+With the Internet data availability seems not to constitude a problem anymore. Aspects of storing, processing and mining those data amounts were reconsidered in the past years and led to the raise of new technologies and the mostly unloved buzzword Big Data. A single CPU can not accomblish the processing of those data quantities, especially if the algorithms are computationally intensive like most of the prediction algorithms from the field of Machine Learning which are widely used in Datamining. To handle that  the parallel execution of calculations is spread over a cluster of machines with a underlying system responsible for scheduling, load balance and fault tolerance \citep[p. 10]{zaharia2010} . The forerunner of this cluster model was Hadoop, now several frameworks which extend this work are developed and allow wider functionality and significant performance improvements. Even though those frameworks are centered around data processing and ease of use software developers need to be aware of the distributed nature of such systems and parallel computation execution. This might be clear to those coming from a Distributed Systems background but challanging for data engineers or developers related to Datamining who are more used to sequencial arrangement of data processing.  
 
 \subsection{Methods}
 \subsubsection{Sliding Window}
@@ -64,7 +64,12 @@ texttexttext
 
 \subsection{Software}
 %write here
-For realising the stated approaches we are using Apache Spark and MLlib. Apache Spark is a open source processing engine for parallel processing of large scale data. 
+For realising the stated approaches we are using Apache Spark and MLlib. Apache Spark is a open source processing engine for parallel processing of large scale data. Spark works on top of a distributed storage and uses a cluster manager cluster manager like Yarn or Mesos. For the purpose of this project the locale storage was used as simulated distributed storage which is integrated in spark for developing and testing reasons.  \\
+While the Spark core handels scheduling and load balancing the on top working modules provide additional functionality for streaming, Machine Learning  algorithims and graph computation. The main programming abstraction in Spark is called RDD (resilient distributed dataset), a collection of objects partitioned across different machines for parallel programming. Beside map and reduce parallel operations on RDDs like filter, collect and foreeach etc. are provided. For shared variables broadcast variables and  accumulators can be used.
+\\ 
+TODO: Something about Streaming
+\\
+TODO: MLlib if used
 
 
 \subsection{Data}
