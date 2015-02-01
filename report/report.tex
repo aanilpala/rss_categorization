@@ -1,5 +1,7 @@
 \documentclass[12pt]{article}
 \usepackage[pdftex]{graphicx}
+\usepackage[final]{pdfpages}
+\usepackage{svg}
 \usepackage{cite} 
 \usepackage[german,english]{babel}
 \usepackage[round]{natbib}
@@ -30,6 +32,18 @@ In this report we are using RSS feeds from BCC for classification on a distribut
 %write here
 texttexttext
 
+\subsubsection{Concept Drift}
+%write here
+texttexttext
+
+\subsubsection{Streaming}
+%write here
+texttexttext
+
+\subsubsection{Distributed Systems}
+%write here
+Large amounts of data, processing algorithms, ML intense calculation, single machine many nodes, query distribution vs. the other one, HDFS split partitions,  distributed algorithms  
+
 \subsection{Methods}
 \subsubsection{Sliding Window}
 %write here
@@ -46,18 +60,22 @@ texttexttext
 
 \subsection{Software}
 %write here
-texttexttext
-
+For realising the stated approaches we are using Apache Spark and MLlib. Apache Spark is a open source processing engine for parallel processing of large scale data.   
 
 
 \subsection{Data}
 %write here
 texttexttext
 
+\newpage
 \subsection{Implementation}
 %write here
-texttexttext
 
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[scale=0.56]{VisualisationOfflineWorkflow.pdf}
+  \caption{Offline Workflow}
+\end{figure}
 
 \subsection{Evaluation}
 %write here
