@@ -27,6 +27,8 @@ import org.apache.spark.streaming.api.java.JavaStreamingContext;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
+import com.google.common.base.Optional;
+
 import rss.categorizer.config.TimeConversion;
 import rss.categorizer.model.DictionaryEntry;
 import scala.Tuple2;
@@ -124,6 +126,8 @@ public class Streamer {
 			}
 		});
 	    
+	    
+	    
 //	    final ArrayList<DictionaryEntry> temp = new ArrayList<DictionaryEntry>();
 //	    
 //	    raw_dictionary_stream.foreachRDD(new Function<JavaPairRDD<Integer,DictionaryEntry>, Void>() {
@@ -152,30 +156,71 @@ public class Streamer {
 //	    	System.out.println(each);
 //	    }
 	    
+	    JavaPairDStream<Integer, DictionaryEntry> accumulated_dictionary_stream = dictionary_stream.updateStateByKey(new Function2<List<DictionaryEntry>, Optional<DictionaryEntry>, Optional<DictionaryEntry>>() {
+
+			@Override
+			public Optional<DictionaryEntry> call(List<DictionaryEntry> new_entries,
+					Optional<DictionaryEntry> state) throws Exception {
+				
+				if(state.isPresent()) {
+					state.get().incrementDfBy(new_entries.size());
+					return Optional.of(state.get());
+				}
+				else {
+					DictionaryEntry dict_entry = new_entries.get(0);
+					dict_entry.incrementDfBy(new_entries.size()-1);
+					return Optional.of(dict_entry);
+				}
+				
+				
+			}
+
+			
+
+			
+		});
 	    
 	    
-//	    dictionary_stream.foreachRDD(new Function<JavaPairRDD<Integer,DictionaryEntry>, Void>() {
-//
-//			@Override
-//			public Void call(JavaPairRDD<Integer, DictionaryEntry> v1)
-//					throws Exception {
-//				List<Tuple2<Integer, DictionaryEntry>> temp = v1.collect();
-//				
-//				System.out.println(temp.size());
-//				
-////				for(Tuple2<Integer, DictionaryEntry> each : temp) {
-////					System.out.println(each.toString());
-////				}
-//				return null;
-//				
-//			}
-//	    	
-//	    	
-//	    	
-//	    	
-//	    });
 	    
-	    dictionary_stream.print();
+	    accumulated_dictionary_stream.foreachRDD(new Function<JavaPairRDD<Integer,DictionaryEntry>, Void>() {
+
+			@Override
+			public Void call(JavaPairRDD<Integer, DictionaryEntry> v1)
+					throws Exception {
+				List<Tuple2<Integer, DictionaryEntry>> temp = v1.collect();
+				
+				System.out.println(temp.size());
+				
+//				for(Tuple2<Integer, DictionaryEntry> each : temp) {
+//					System.out.println(each.toString());
+//				}
+				return null;
+				
+				}
+	    });
+	    
+	    dictionary_stream.foreachRDD(new Function<JavaPairRDD<Integer,DictionaryEntry>, Void>() {
+
+			@Override
+			public Void call(JavaPairRDD<Integer, DictionaryEntry> v1)
+					throws Exception {
+				List<Tuple2<Integer, DictionaryEntry>> temp = v1.collect();
+				
+				System.out.println(temp.size());
+				
+//				for(Tuple2<Integer, DictionaryEntry> each : temp) {
+//					System.out.println(each.toString());
+//				}
+				return null;
+				
+			}
+	    	
+	    });
+	    
+	    //accumulated_dictionary_stream.print();
+	    //dictionary_stream.print();
+	    
+	    
 	    tuple_stream.print();
 	    ssc.start();
 	    ssc.awaitTermination();

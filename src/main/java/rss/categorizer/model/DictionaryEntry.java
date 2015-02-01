@@ -38,6 +38,11 @@ public class DictionaryEntry implements Serializable {
 	public void incrementDf() {
 		df++;
 	}
+
+	public void incrementDfBy(int size) {
+		df += size;
+		
+	}
 	
 	
 	

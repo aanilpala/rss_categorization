@@ -2,12 +2,10 @@ package rss.categorizer.util.feed;
 
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.io.Serializable;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 
@@ -17,12 +15,10 @@ import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.Function2;
 
 import rss.categorizer.config.TimeConversion;
-import rss.categorizer.model.FeedItem;
 import scala.Tuple2;
 import scala.Tuple3;
 
@@ -117,7 +113,7 @@ public class FeedCaster {
 			public Boolean call(Tuple3<Long, String, String> tuple) throws Exception {
 				
 				if(tuple._2().split(" |,").length < 5) return false; // Reject Feed Items with too less words
-				if(tuple._1() < 1421236800000L) return false;  // Reject Feed Items published before the 14th January, 12:00 GMT -data is too sparse prior to this point in time.
+				if(tuple._1() < 1421280000000L) return false;  // Reject Feed Items published before the 15th January, 00:00 GMT -data is too sparse prior to this point in time.
 				else return true;
 			}
 		});

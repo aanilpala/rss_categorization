@@ -9,7 +9,7 @@ public class DateTest {
 
 	
 	public static void main(String[] args) {
-		String a = "31 Jan 2015 00:33:00 GMT";
+		String a = "15 Jan 2015 00:00:00 GMT";
 		
 		DateFormat format = new SimpleDateFormat("dd MMM yyyy HH:mm:ss zzz", Locale.ENGLISH);
 		
