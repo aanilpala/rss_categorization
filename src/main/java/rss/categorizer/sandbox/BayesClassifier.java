@@ -1,7 +1,5 @@
-package sandbox;
+package rss.categorizer.sandbox;
 
-import feed.model.*;
-import feed.model.Dictionary;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
@@ -13,6 +11,9 @@ import org.apache.spark.mllib.classification.NaiveBayesModel;
 import org.apache.spark.mllib.linalg.*;
 import org.apache.spark.mllib.linalg.Vector;
 import org.apache.spark.mllib.regression.LabeledPoint;
+
+import rss.categorizer.model.*;
+import rss.categorizer.model.Dictionary;
 import scala.Tuple2;
 
 import java.util.*;

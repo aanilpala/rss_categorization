@@ -1,4 +1,4 @@
-package feed.util;
+package rss.categorizer.util.feed;
 
 import java.io.FileWriter;
 import java.io.IOException;
@@ -7,8 +7,8 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Locale;
 
-import feed.model.Feed;
-import feed.model.FeedItem;
+import rss.categorizer.model.Feed;
+import rss.categorizer.model.FeedItem;
 
 public class Reader {
 

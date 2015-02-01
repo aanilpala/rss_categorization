@@ -1,4 +1,4 @@
-package feed.util;
+package rss.categorizer.util.feed;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.FileWriter;

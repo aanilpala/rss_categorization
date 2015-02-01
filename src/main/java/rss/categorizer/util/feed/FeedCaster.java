@@ -1,4 +1,4 @@
-package feed.util;
+package rss.categorizer.util.feed;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -21,9 +21,10 @@ import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.Function2;
 
+import rss.categorizer.config.TimeConversion;
+import rss.categorizer.model.FeedItem;
 import scala.Tuple2;
 import scala.Tuple3;
-import feed.model.FeedItem;
 
 public class FeedCaster {
 
@@ -50,7 +51,7 @@ public class FeedCaster {
 	public void castList(List<Tuple3<Long, String, String>> items) {
 		Long lastStreamed = 0L, waitingTime;
 		for(Tuple3<Long, String, String> each : items) {
-			if(lastStreamed != 0) waitingTime = (each._1() - lastStreamed)/10000;  // This means in manual streaming we stream 1000 times faster than the real data-rate of the RSS Feeds
+			if(lastStreamed != 0) waitingTime = (each._1() - lastStreamed) / TimeConversion.flow_rate;
 			else waitingTime = 10L;
 			try {
 				Thread.sleep(waitingTime);
@@ -115,7 +116,7 @@ public class FeedCaster {
 			@Override
 			public Boolean call(Tuple3<Long, String, String> tuple) throws Exception {
 				
-				if(tuple._2().split(" |,").length < 10) return false; // Reject Feed Items with too less words
+				if(tuple._2().split(" |,").length < 5) return false; // Reject Feed Items with too less words
 				if(tuple._1() < 1421236800000L) return false;  // Reject Feed Items published before the 14th January, 12:00 GMT -data is too sparse prior to this point in time.
 				else return true;
 			}

@@ -1,4 +1,4 @@
-package classifier;
+package rss.categorizer.classifier;
 
 
 import java.util.ArrayList;
@@ -27,18 +27,20 @@ import org.apache.spark.streaming.api.java.JavaStreamingContext;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
+import rss.categorizer.config.TimeConversion;
+import rss.categorizer.model.DictionaryEntry;
 import scala.Tuple2;
 import scala.Tuple3;
-import feed.model.DictionaryEntry;
 
 
 public class Streamer {
 
-	public static Long window_duration = 3600L; // this corresponds to an hour
-	public static Long sliding_interval= 3600L; 
-	public static Long batch_interval = 3600L; 
+	//public static Long window_duration = 2*TimeConversion.an_hour;
+	//public static Long sliding_interval= 2*TimeConversion.an_hour;
+	public static Long batch_interval = 6*TimeConversion.an_hour;
 	
-	//public static Long training_interval = 3000L*60;
+	public static Long training_dur = 6*TimeConversion.an_hour;
+	public static Long training_interval = 24*TimeConversion.an_hour;
 	
 	public static void main(String[] args) {
 		
@@ -68,8 +70,8 @@ public class Streamer {
 			@Override
 			public Tuple3<Long, String, String> call(String item) throws Exception {
 				
-				String[] tokens = item.split(",");
-				return new Tuple3<Long, String, String>(Long.parseLong(tokens[0].substring(1, tokens[0].length())), tokens[2], tokens[1]);
+				String[] tokens = item.replaceAll("\\(|\\)", "").split(",");
+				return new Tuple3<Long, String, String>(Long.parseLong(tokens[0]), tokens[2], tokens[1]);
 				
 			}
 		});
@@ -80,8 +82,9 @@ public class Streamer {
 
 			@Override
 			public Boolean call(Tuple3<Long, String,String> tuple) throws Exception {
-				if((tuple._1() % 24*60*60*1000) < 6*60*60*1000) return true;
+				if((tuple._1()/TimeConversion.flow_rate % training_interval) < training_dur) return true;
 				else return false;
+				//return false;
 			}
 	    	
 	    	
@@ -92,13 +95,13 @@ public class Streamer {
 					throws Exception {
 
 				List<Tuple2<Integer, DictionaryEntry>> bag = new ArrayList<Tuple2<Integer, DictionaryEntry>>();
-				String[] terms = t._3().split(" ");
+				String[] terms = t._3().toLowerCase().trim().replaceAll("[^0-9A-Za-z]", " ").split(" ");
 				
 				Set<String> uniqueTerms = new HashSet<String>(Arrays.asList(terms)); // we don't need tf for the dictionary
 
 				
 				for(String term : uniqueTerms) {
-					String dicTerm = term.toLowerCase().replaceAll("[^\\dA-Za-z]| ", "").trim();
+					if(term.length() == 0) continue;
 					DictionaryEntry dictionaryEntry = new DictionaryEntry(term);
 					Tuple2<Integer, DictionaryEntry> dictionaryStreamEntry = new Tuple2<Integer, DictionaryEntry>(dictionaryEntry.getIndex(), dictionaryEntry);
 					
@@ -111,7 +114,7 @@ public class Streamer {
 		});
 	    
 	    
-	    JavaPairDStream<Integer, DictionaryEntry> reduced_dictionary_stream = raw_dictionary_stream.reduceByKey(new Function2<DictionaryEntry, DictionaryEntry, DictionaryEntry>() {
+	    JavaPairDStream<Integer, DictionaryEntry> dictionary_stream = raw_dictionary_stream.reduceByKey(new Function2<DictionaryEntry, DictionaryEntry, DictionaryEntry>() {
 
 			@Override
 			public DictionaryEntry call(DictionaryEntry v1, DictionaryEntry v2)
@@ -149,10 +152,34 @@ public class Streamer {
 //	    	System.out.println(each);
 //	    }
 	    
-	    reduced_dictionary_stream.print();
-	    //tuple_stream.print();
+	    
+	    
+//	    dictionary_stream.foreachRDD(new Function<JavaPairRDD<Integer,DictionaryEntry>, Void>() {
+//
+//			@Override
+//			public Void call(JavaPairRDD<Integer, DictionaryEntry> v1)
+//					throws Exception {
+//				List<Tuple2<Integer, DictionaryEntry>> temp = v1.collect();
+//				
+//				System.out.println(temp.size());
+//				
+////				for(Tuple2<Integer, DictionaryEntry> each : temp) {
+////					System.out.println(each.toString());
+////				}
+//				return null;
+//				
+//			}
+//	    	
+//	    	
+//	    	
+//	    	
+//	    });
+	    
+	    dictionary_stream.print();
+	    tuple_stream.print();
 	    ssc.start();
 	    ssc.awaitTermination();
+	   
 	   
 	    
 	    
@@ -169,10 +196,5 @@ public class Streamer {
 	    
 	}
 	
-	Function2<Integer, Integer, Integer> windowReducer = new Function2<Integer, Integer, Integer>() {
-		  @Override public Integer call(Integer i1, Integer i2) throws Exception {
-		    return i1 + i2;
-		  }
-		};
 	
 }

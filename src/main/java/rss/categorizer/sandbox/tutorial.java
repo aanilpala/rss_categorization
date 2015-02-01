@@ -1,4 +1,4 @@
-package sandbox;
+package rss.categorizer.sandbox;
 
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;

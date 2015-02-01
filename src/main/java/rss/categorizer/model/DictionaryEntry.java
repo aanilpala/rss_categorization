@@ -1,4 +1,4 @@
-package feed.model;
+package rss.categorizer.model;
 
 import java.io.Serializable;
 
@@ -32,7 +32,7 @@ public class DictionaryEntry implements Serializable {
 	
 	@Override
 	public String toString() {
-		return "(" + index + ", " + term + ", " + df + ")"; 
+		return term + ", " + df; 
 	}
 
 	public void incrementDf() {

@@ -1,4 +1,4 @@
-package feed.model;
+package rss.categorizer.model;
 
 import java.io.*;
 import java.util.HashMap;

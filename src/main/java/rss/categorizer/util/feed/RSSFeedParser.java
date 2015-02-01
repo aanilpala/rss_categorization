@@ -1,4 +1,4 @@
-package feed.util;
+package rss.categorizer.util.feed;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -11,8 +11,8 @@ import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.events.Characters;
 import javax.xml.stream.events.XMLEvent;
 
-import feed.model.Feed;
-import feed.model.FeedItem;
+import rss.categorizer.model.Feed;
+import rss.categorizer.model.FeedItem;
 
 public class RSSFeedParser {
   static final String TITLE = "title";

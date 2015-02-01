@@ -1,4 +1,4 @@
-package feed.util;
+package rss.categorizer.dummy;
 
 import java.text.DateFormat;
 import java.text.ParseException;

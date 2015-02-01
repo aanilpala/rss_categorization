@@ -1,4 +1,4 @@
-package feed.model;
+package rss.categorizer.model;
 
 import java.util.ArrayList;
 import java.util.List;
