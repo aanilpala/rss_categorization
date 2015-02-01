@@ -156,44 +156,42 @@ public class Streamer {
 	    
 	    
 	    
-	    accumulated_dictionary_stream.foreachRDD(new Function<JavaPairRDD<Integer,DictionaryEntry>, Void>() {
-
-			@Override
-			public Void call(JavaPairRDD<Integer, DictionaryEntry> v1)
-					throws Exception {
-				List<Tuple2<Integer, DictionaryEntry>> temp = v1.collect();
-
-				System.out.println(temp.size());
-				
-//				for(Tuple2<Integer, DictionaryEntry> each : temp) {
-//					System.out.println(each._2.toString());
+//	    accumulated_dictionary_stream.foreachRDD(new Function<JavaPairRDD<Integer,DictionaryEntry>, Void>() {
+//
+//			@Override
+//			public Void call(JavaPairRDD<Integer, DictionaryEntry> v1)
+//					throws Exception {
+//				List<Tuple2<Integer, DictionaryEntry>> temp = v1.collect();
+//
+//				System.out.println(temp.size());
+//				
+////				for(Tuple2<Integer, DictionaryEntry> each : temp) {
+////					System.out.println(each._2.toString());
+////				}
+//				
+//				return null;
+//				
 //				}
-				
-				return null;
-				
-				}
-	    });
+//	    });
+//	    
+//	    dictionary_stream.foreachRDD(new Function<JavaPairRDD<Integer,DictionaryEntry>, Void>() {
+//
+//			@Override
+//			public Void call(JavaPairRDD<Integer, DictionaryEntry> v1)
+//					throws Exception {
+//				List<Tuple2<Integer, DictionaryEntry>> temp = v1.collect();
+//				
+//				System.out.println(temp.size());
+//				
+//				return null;
+//				
+//			}
+//	    	
+//	    });
 	    
-	    dictionary_stream.foreachRDD(new Function<JavaPairRDD<Integer,DictionaryEntry>, Void>() {
-
-			@Override
-			public Void call(JavaPairRDD<Integer, DictionaryEntry> v1)
-					throws Exception {
-				List<Tuple2<Integer, DictionaryEntry>> temp = v1.collect();
-				
-				System.out.println(temp.size());
-				
-				return null;
-				
-			}
-	    	
-	    });
-	    
-	    //accumulated_dictionary_stream.print();
-	    //dictionary_stream.print();
-	    
-	    
-	    //tuple_stream.print();
+	    accumulated_dictionary_stream.print();
+	    dictionary_stream.print();
+	    tuple_stream.print();
 	    ssc.start();
 	    ssc.awaitTermination();
 	   

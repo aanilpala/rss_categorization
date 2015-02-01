@@ -13,27 +13,19 @@ public class DictionaryEntry implements Serializable {
 	private Integer df; // document frequency
 	private String term;
 	private Map<Integer, Integer> batch2df_map;
-	private Integer batch_num; // relevant only before put into the dictionary
+	private Integer init_batch; // the first batch the term showed up
 	
 	public DictionaryEntry(String term, Integer batch_num) {
 		this.term = term;
 		this.df = 1;
 		this.index = term.hashCode();
-		this.batch_num = batch_num;
+		this.init_batch = batch_num;
 		this.batch2df_map = new HashMap<Integer, Integer>();
 		this.batch2df_map.put(batch_num, 1);
 	}
 
 	public Integer getIndex() {
 		return index;
-	}
-
-	public void setDf(Integer df) {
-		this.df = df;
-	}
-
-	public Integer getDf() {
-		return df;
 	}
 
 	public String getTerm() {
@@ -63,8 +55,20 @@ public class DictionaryEntry implements Serializable {
 		
 	}
 	
-	public Integer queryBatch(int batch_num) {
+	public Integer getDfByBatch(int batch_num) {
 		return batch2df_map.get(batch_num);
+	}
+	
+	public Integer getTotalDf() {
+		int total_df = 0;
+		
+		Set<Integer> keys = batch2df_map.keySet();
+		
+		for(Integer key : keys) {
+			total_df += batch2df_map.get(key);
+		}
+		
+		return total_df;
 	}
 	
 	public void updateBatch(int batch_num, int df) {
@@ -76,7 +80,7 @@ public class DictionaryEntry implements Serializable {
 	}
 	
 	public Integer getBatchNumber() {
-		return batch_num;
+		return init_batch;
 	}
 	
 	
