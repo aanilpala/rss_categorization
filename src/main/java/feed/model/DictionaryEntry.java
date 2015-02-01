@@ -1,6 +1,8 @@
 package feed.model;
 
-public class DictionaryEntry {
+import java.io.Serializable;
+
+public class DictionaryEntry implements Serializable {
 	
 	private Integer index; // hash-value will go here
 	private Integer df; // document frequency
@@ -11,13 +13,13 @@ public class DictionaryEntry {
 		this.df = 1;
 		this.index = term.hashCode();
 	}
-	
-	public void incrementDF() {
-		this.df++;
-	}
 
 	public Integer getIndex() {
 		return index;
+	}
+
+	public void setDf(Integer df) {
+		this.df = df;
 	}
 
 	public Integer getDf() {
@@ -26,6 +28,15 @@ public class DictionaryEntry {
 
 	public String getTerm() {
 		return term;
+	}
+	
+	@Override
+	public String toString() {
+		return "(" + index + ", " + term + ", " + df + ")"; 
+	}
+
+	public void incrementDf() {
+		df++;
 	}
 	
 	

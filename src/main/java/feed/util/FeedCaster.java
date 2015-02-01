@@ -50,7 +50,7 @@ public class FeedCaster {
 	public void castList(List<Tuple3<Long, String, String>> items) {
 		Long lastStreamed = 0L, waitingTime;
 		for(Tuple3<Long, String, String> each : items) {
-			if(lastStreamed != 0) waitingTime = (each._1() - lastStreamed)/60;  // This means in manual streaming we stream 60 times faster than the real data-rate of the RSS Feeds
+			if(lastStreamed != 0) waitingTime = (each._1() - lastStreamed)/10000;  // This means in manual streaming we stream 1000 times faster than the real data-rate of the RSS Feeds
 			else waitingTime = 10L;
 			try {
 				Thread.sleep(waitingTime);
@@ -58,6 +58,7 @@ public class FeedCaster {
 				e.printStackTrace();
 			}
 			out.println(each.toString());
+			System.out.println("Item casted with " + waitingTime + "ms delay: " + each.toString());
 			lastStreamed = each._1();
 			
 		}
