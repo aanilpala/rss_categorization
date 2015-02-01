@@ -30,7 +30,20 @@ In this report we are using RSS feeds from BCC for classification on a distribut
 
 \subsection{Na\"ive Bayes classifier}
 
-As mentioned Na\"ive Bayes classifier are probalistic classifiers which are simple but effictive in text classification. They operate on the basis of probabilities. 
+As mentioned Na\"ive Bayes classifiers are probalistic classifiers which are simple but effictive in text classification. They operate on the basis of the Bayes Theorem and assume independance of features. Here the feature values are normalized  words frequencies occuring in a document. The probability of a word $w$ belonging to class $y \in Y$ is given by $P(y|w_i)$ and can be reformulated with Bayes Theorem to its conditional probality and a priori probability $ P(y)$ of class $y$. Both can be derived from frequencies of documents and words.
+$$
+P(y|w_i) \propto P(y)P(w_i|y)
+$$
+The computation of the joint probability over a documents features will give the probability for a  document $d$ belonging to a certain class $y$. Instead of multiplication the logarithmen is used to avoid underflow by multiplying with zero:
+$$
+P(y|d) \propto P(y)\prod_i P(w_i|y)\space
+\textrm{,  bzw.:    }
+P(y|d) \propto log P(y) log \sum_i P(w_i|y),
+$$
+Applying for all classes will give the decision rule which categorize a new text document according to its most likely class which is the one with the highest joint probability value.
+$$
+\arg\max_y\{ log P(y) log \sum_i P(w_i|y)\}
+$$
 
 \subsection{Challanges/ Concepts}
 %write here
