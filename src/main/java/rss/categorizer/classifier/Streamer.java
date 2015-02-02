@@ -1,14 +1,12 @@
 package rss.categorizer.classifier;
 
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
+import org.apache.spark.api.java.JavaRDD;
+import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.api.java.function.PairFlatMapFunction;
@@ -23,7 +21,8 @@ import org.apache.log4j.Logger;
 import com.google.common.base.Optional;
 
 import rss.categorizer.config.Time;
-import rss.categorizer.model.DictionaryEntry;
+import rss.categorizer.model.*;
+import rss.categorizer.model.Dictionary;
 import scala.Tuple2;
 import scala.Tuple3;
 
@@ -153,9 +152,112 @@ public class Streamer {
 
 			
 		});
-	    
-	    
-	    
+
+/*
+		tuple_stream.foreachRDD(new Function<JavaRDD<Tuple3<Long, String, String>>, Void>() {
+			@Override
+			public Void call(JavaRDD<Tuple3<Long, String, String>> inputElement) throws Exception {
+
+				List<Tuple3<Long, String, String>> streamTuples = inputElement.collect();
+
+				if (!streamTuples.isEmpty()) {
+
+					for(Tuple3<Long, String, String> t : streamTuples){
+						String category = t._2();
+						String text = t._3();
+
+						String[] tokens = text.split("\\s+");
+
+					}
+
+				}
+
+
+				return null;
+			}
+		});
+
+*/
+		// for joining on hashcode construct stream of <key= hashcode,<timestamp, category>>
+		JavaPairDStream<Integer, Tuple2<Long, String>> hashText = tuple_stream.flatMapToPair(new PairFlatMapFunction<Tuple3<Long, String, String>, Integer, Tuple2<Long, String>>() {
+			@Override
+			public Iterable<Tuple2<Integer,Tuple2<Long, String>>> call(final Tuple3<Long, String, String> streamTuples) throws Exception {
+
+
+				List<Tuple2<Integer,Tuple2<Long, String>>> results = new ArrayList<Tuple2<Integer, Tuple2<Long, String>>>();
+				String[] tokens = streamTuples._3().split("\\s+");
+				for(String w: tokens){
+					w.toLowerCase().replaceAll("[^\\dA-Za-z]", "").trim();
+					int index = w.hashCode();
+					Tuple2<Long, String> timestampCateg = new Tuple2<Long, String>(streamTuples._1(), streamTuples._2());
+					results.add(new Tuple2<Integer, Tuple2<Long, String>>(index,timestampCateg));
+				}
+
+				return results;
+			}
+		});
+
+		// join to <hashcode,<<timestamp, category>, DictionaryEntry>>
+		JavaPairDStream<Integer,Tuple2<Tuple2<Long, String>, DictionaryEntry>> joinedWithDic = hashText.join(accumulated_dictionary_stream);
+		//joinedWithDic.print();
+
+		// make timestamp+hashcode insert 1 in order to reduce frequencies in next step
+		JavaPairDStream<String, Tuple3<Integer, String, DictionaryEntry>> reordered = joinedWithDic.flatMapToPair(new PairFlatMapFunction<Tuple2<Integer, Tuple2<Tuple2<Long, String>, DictionaryEntry>>, String, Tuple3<Integer, String, DictionaryEntry>>() {
+			@Override
+			public Iterable<Tuple2<String, Tuple3<Integer, String, DictionaryEntry>>> call(Tuple2<Integer, Tuple2<Tuple2<Long, String>, DictionaryEntry>> input) throws Exception {
+				Long timestamp = input._2()._1()._1();
+				String category = input._2()._1._2();
+				DictionaryEntry dicEntry = input._2()._2();
+				Integer index = input._1();
+				Tuple3<Integer, String, DictionaryEntry> value = new Tuple3<Integer, String, DictionaryEntry>(1,category,dicEntry);
+				List<Tuple2<String,Tuple3<Integer, String, DictionaryEntry>>> results = new ArrayList<Tuple2<String, Tuple3<Integer, String, DictionaryEntry>>>();
+				String key = timestamp.toString() + ":" + index.toString();
+				results.add(new Tuple2<String, Tuple3<Integer, String, DictionaryEntry>>(key,value));
+				return results;
+			}
+		});
+
+		//reordered.print();
+
+
+
+		JavaPairDStream<String,Tuple3<Integer, String, DictionaryEntry>> wordCountsStream = reordered.reduceByKey(new Function2<Tuple3<Integer, String, DictionaryEntry>, Tuple3<Integer, String, DictionaryEntry>, Tuple3<Integer, String, DictionaryEntry>>() {
+			@Override
+			public Tuple3<Integer, String, DictionaryEntry> call(Tuple3<Integer, String, DictionaryEntry> val1, Tuple3<Integer, String, DictionaryEntry> val2) throws Exception {
+
+				int wordcount = val1._1() + val2._1();
+				// TODO: tf-idf or similar
+				Tuple3<Integer, String, DictionaryEntry> result = new Tuple3<Integer, String, DictionaryEntry>(wordcount, val1._2(),val1._3());
+				return result;
+			}
+
+		});
+
+		wordCountsStream.print();
+
+
+/*
+
+
+
+
+
+		hashText.foreachRDD(new Function<JavaPairRDD<Integer, String>, Void>() {
+			@Override
+			public Void call(JavaPairRDD<Integer, String> pair) throws Exception {
+				System.out.println(pair.first());
+				return null;
+			}
+		});
+*/
+
+
+
+
+
+
+
+
 //	    accumulated_dictionary_stream.foreachRDD(new Function<JavaPairRDD<Integer,DictionaryEntry>, Void>() {
 //
 //			@Override
@@ -188,11 +290,11 @@ public class Streamer {
 //			}
 //	    	
 //	    });
-	    
-	    accumulated_dictionary_stream.print();
-	    dictionary_stream.print();
-	    tuple_stream.print();
-	    ssc.start();
+
+				//  accumulated_dictionary_stream.print();
+				//  dictionary_stream.print();
+				// tuple_stream.print();
+				ssc.start();
 	    ssc.awaitTermination();
 	   
 	   
