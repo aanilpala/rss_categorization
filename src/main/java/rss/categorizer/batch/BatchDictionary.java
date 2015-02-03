@@ -22,7 +22,7 @@ public class BatchDictionary {
         this.tfIdf = new ArrayList<Double>();
         // tfIdf.set(-1,0.0);
         //word, [index, docWithTermCount]
-       // ArrayList<Integer> current = new ArrayList<Integer>();
+        // ArrayList<Integer> current = new ArrayList<Integer>();
 
         this.dictionary = new HashMap<String, ArrayList<Integer>>();
         this.lastIndex = -1;
@@ -94,10 +94,9 @@ public class BatchDictionary {
             Map.Entry pairs = (Map.Entry)it.next();
             tfIdfVal = Math.log((double)this.numDoc/(double)this.dictionary.get(pairs.getKey()).get(1));
             this.tfIdf.set(this.dictionary.get(pairs.getKey()).get(0), tfIdfVal);
-           // System.out.println(pairs.getKey() + " = " + pairs.getValue());
+            // System.out.println(pairs.getKey() + " = " + pairs.getValue());
         }
-   //
-   //
-
     }
+
+
 }
