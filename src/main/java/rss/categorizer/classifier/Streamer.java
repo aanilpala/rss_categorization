@@ -6,15 +6,20 @@ import java.util.*;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
+import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.Function2;
+import org.apache.spark.api.java.function.Function3;
 import org.apache.spark.api.java.function.PairFlatMapFunction;
+import org.apache.spark.api.java.function.PairFunction;
+import org.apache.spark.api.java.function.VoidFunction;
 import org.apache.spark.streaming.Duration;
 import org.apache.spark.streaming.api.java.JavaDStream;
 import org.apache.spark.streaming.api.java.JavaPairDStream;
 import org.apache.spark.streaming.api.java.JavaReceiverInputDStream;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
+import org.apache.spark.streaming.dstream.DStream;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
@@ -40,7 +45,7 @@ public class Streamer {
 		
 	
 		
-		SparkConf conf = new SparkConf().setAppName("streamer-playaround").setMaster("local[2]");
+		SparkConf conf = new SparkConf().setAppName("streamer-playaround").setMaster("local[4]");
 			
 		
 		// disabling default verbouse mode of the loggers
@@ -176,140 +181,119 @@ public class Streamer {
 				return null;
 			}
 		});
-
 */
-		// for joining on hashcode construct stream of <key= hashcode,<timestamp, category>>
-		JavaPairDStream<Integer, Tuple2<Long, String>> hashText = tuple_stream.flatMapToPair(new PairFlatMapFunction<Tuple3<Long, String, String>, Integer, Tuple2<Long, String>>() {
+	     
+	   
+//	    JavaDStream<Tuple2<Integer, DictionaryEntry>> test = accumulated_dictionary_stream.map(new Function<Tuple2<Integer,DictionaryEntry>, Tuple2<Integer,DictionaryEntry>>() {
+//
+//			@Override
+//			public Tuple2<Integer, DictionaryEntry> call(
+//					Tuple2<Integer, DictionaryEntry> v1) throws Exception {
+//				// TODO Auto-generated method stub
+//				return v1;
+//			}
+//		});
+//	    
+//	    
+//	
+//	    
+//	  
+//	  
+//	    JavaDStream<Tuple2<String, List<Integer>>> test2 = tuple_stream.transformWith(test, new func3()); 
+//	    
+//	    test2.print();
+	    
+
+		//for joining on hashcode construct stream of <key= hashcode,<timestamp, category>>
+		JavaPairDStream<Integer, Long> hash_keys = tuple_stream.flatMapToPair(new PairFlatMapFunction<Tuple3<Long, String, String>, Integer, Long>() {
 			@Override
-			public Iterable<Tuple2<Integer,Tuple2<Long, String>>> call(final Tuple3<Long, String, String> streamTuples) throws Exception {
+			public Iterable<Tuple2<Integer, Long>> call(final Tuple3<Long, String, String> tuple_stream_item) throws Exception {
 
 
-				List<Tuple2<Integer,Tuple2<Long, String>>> results = new ArrayList<Tuple2<Integer, Tuple2<Long, String>>>();
-				String[] tokens = streamTuples._3().split("\\s+");
+				List<Tuple2<Integer, Long>> hashkeys = new ArrayList<Tuple2<Integer, Long>>();
+				String[] tokens = tuple_stream_item._3().split("\\s+");
+				Long timestamp = tuple_stream_item._1();
+				
 				for(String w: tokens){
 					w.toLowerCase().replaceAll("[^\\dA-Za-z]", "").trim();
 					int index = w.hashCode();
-					Tuple2<Long, String> timestampCateg = new Tuple2<Long, String>(streamTuples._1(), streamTuples._2());
-					results.add(new Tuple2<Integer, Tuple2<Long, String>>(index,timestampCateg));
+					hashkeys.add(new Tuple2<Integer, Long>(index, timestamp));
 				}
 
-				return results;
+				return hashkeys;
 			}
 		});
 
-		// join to <hashcode,<<timestamp, category>, DictionaryEntry>>
-		JavaPairDStream<Integer,Tuple2<Tuple2<Long, String>, DictionaryEntry>> joinedWithDic = hashText.join(accumulated_dictionary_stream);
-		//joinedWithDic.print();
+		
+		JavaPairDStream<Integer, Tuple2<Long, DictionaryEntry>> unfolded_data_points = hash_keys.join(accumulated_dictionary_stream);
+		
+		JavaPairDStream<Long, List<Tuple2<Integer, Integer>>> projected_unfolded_data_points = unfolded_data_points.mapToPair(new PairFunction<Tuple2<Integer,Tuple2<Long,DictionaryEntry>>, Long, List<Tuple2<Integer, Integer>>>() {
 
-		// make timestamp+hashcode insert 1 in order to reduce frequencies in next step
-		JavaPairDStream<String, Tuple3<Integer, String, DictionaryEntry>> reordered = joinedWithDic.flatMapToPair(new PairFlatMapFunction<Tuple2<Integer, Tuple2<Tuple2<Long, String>, DictionaryEntry>>, String, Tuple3<Integer, String, DictionaryEntry>>() {
 			@Override
-			public Iterable<Tuple2<String, Tuple3<Integer, String, DictionaryEntry>>> call(Tuple2<Integer, Tuple2<Tuple2<Long, String>, DictionaryEntry>> input) throws Exception {
-				Long timestamp = input._2()._1()._1();
-				String category = input._2()._1._2();
-				DictionaryEntry dicEntry = input._2()._2();
-				Integer index = input._1();
-				Tuple3<Integer, String, DictionaryEntry> value = new Tuple3<Integer, String, DictionaryEntry>(1,category,dicEntry);
-				List<Tuple2<String,Tuple3<Integer, String, DictionaryEntry>>> results = new ArrayList<Tuple2<String, Tuple3<Integer, String, DictionaryEntry>>>();
-				String key = timestamp.toString() + ":" + index.toString();
-				results.add(new Tuple2<String, Tuple3<Integer, String, DictionaryEntry>>(key,value));
-				return results;
+			public Tuple2<Long, List<Tuple2<Integer, Integer>>> call(
+					Tuple2<Integer, Tuple2<Long, DictionaryEntry>> v1)
+					throws Exception {
+				// TODO Auto-generated method stub
+				
+				List<Tuple2<Integer, Integer>> term_array = new ArrayList<Tuple2<Integer, Integer>>();
+				term_array.add(new Tuple2<Integer, Integer>(v1._1, v1._2._2.getTotalDf())); // getting total df, this is only for incremental approach
+				return new Tuple2<Long, List<Tuple2<Integer, Integer>>>(v1._2._1, term_array);
+			}
+			
+		});
+		
+		
+		JavaPairDStream<Long, List<Tuple2<Integer, Integer>>> labeled_points = projected_unfolded_data_points.reduceByKey(new Function2<List<Tuple2<Integer,Integer>>, List<Tuple2<Integer,Integer>>, List<Tuple2<Integer,Integer>>>() {
+
+			@Override
+			public List<Tuple2<Integer, Integer>> call(
+					List<Tuple2<Integer, Integer>> v1,
+					List<Tuple2<Integer, Integer>> v2) throws Exception {
+				
+				v1.addAll(v2);
+				return v1;
+				
 			}
 		});
-
-		//reordered.print();
-
-
-
-		JavaPairDStream<String,Tuple3<Integer, String, DictionaryEntry>> wordCountsStream = reordered.reduceByKey(new Function2<Tuple3<Integer, String, DictionaryEntry>, Tuple3<Integer, String, DictionaryEntry>, Tuple3<Integer, String, DictionaryEntry>>() {
+		
+		
+		labeled_points.foreachRDD(new Function<JavaPairRDD<Long,List<Tuple2<Integer,Integer>>>, Void>() {
+			
 			@Override
-			public Tuple3<Integer, String, DictionaryEntry> call(Tuple3<Integer, String, DictionaryEntry> val1, Tuple3<Integer, String, DictionaryEntry> val2) throws Exception {
+			public Void call(JavaPairRDD<Long, List<Tuple2<Integer, Integer>>> v1)
+					throws Exception {
+				
+				
+				v1.foreach(new VoidFunction<Tuple2<Long,List<Tuple2<Integer,Integer>>>>() {
 
-				int wordcount = val1._1() + val2._1();
-				// TODO: tf-idf or similar
-				Tuple3<Integer, String, DictionaryEntry> result = new Tuple3<Integer, String, DictionaryEntry>(wordcount, val1._2(),val1._3());
-				return result;
-			}
-
-		});
-
-		wordCountsStream.print();
-
-
-/*
-
-
-
-
-
-		hashText.foreachRDD(new Function<JavaPairRDD<Integer, String>, Void>() {
-			@Override
-			public Void call(JavaPairRDD<Integer, String> pair) throws Exception {
-				System.out.println(pair.first());
+					@Override
+					public void call(
+							Tuple2<Long, List<Tuple2<Integer, Integer>>> t)
+							throws Exception {
+						
+						System.out.print(t._1 + "-" );
+						
+						for(Tuple2<Integer, Integer> each : t._2) {
+							
+							System.out.print(each._1 + " : " + each._2 + ", ");
+						}
+							
+						System.out.println();
+					}
+				});
+				
 				return null;
+				
 			}
 		});
-*/
-
-
-
-
-
-
-
-
-//	    accumulated_dictionary_stream.foreachRDD(new Function<JavaPairRDD<Integer,DictionaryEntry>, Void>() {
-//
-//			@Override
-//			public Void call(JavaPairRDD<Integer, DictionaryEntry> v1)
-//					throws Exception {
-//				List<Tuple2<Integer, DictionaryEntry>> temp = v1.collect();
-//
-//				System.out.println(temp.size());
-//				
-////				for(Tuple2<Integer, DictionaryEntry> each : temp) {
-////					System.out.println(each._2.toString());
-////				}
-//				
-//				return null;
-//				
-//				}
-//	    });
-//	    
-//	    dictionary_stream.foreachRDD(new Function<JavaPairRDD<Integer,DictionaryEntry>, Void>() {
-//
-//			@Override
-//			public Void call(JavaPairRDD<Integer, DictionaryEntry> v1)
-//					throws Exception {
-//				List<Tuple2<Integer, DictionaryEntry>> temp = v1.collect();
-//				
-//				System.out.println(temp.size());
-//				
-//				return null;
-//				
-//			}
-//	    	
-//	    });
-
-				//  accumulated_dictionary_stream.print();
-				//  dictionary_stream.print();
-				// tuple_stream.print();
-				ssc.start();
+		
+		
+		//labeled_points.print();
+		accumulated_dictionary_stream.print();
+		//  dictionary_stream.print();
+		// tuple_stream.print();
+		ssc.start();
 	    ssc.awaitTermination();
-	   
-	   
-	    
-	    
-//	    Queue<JavaRDD<FeedItem>> rddQueue = new LinkedList<JavaRDD<FeedItem>>();
-//
-//	    List<FeedItem> list = new ArrayList<FeedItem>();
-//	    
-//	   
-//	    for (int i = 0; i < 30; i++) {
-//	      rddQueue.add(ssc.sparkContext().parallelize(list));
-//	    }	    
-//	    
-//	    ssc.queueStream(queue, oneAtATime)
 	    
 	}
 	

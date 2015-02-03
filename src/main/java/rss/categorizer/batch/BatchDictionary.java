@@ -1,4 +1,4 @@
-package rss.categorizer.Batch;
+package rss.categorizer.batch;
 
 import org.apache.commons.lang.ArrayUtils;
 

@@ -63,7 +63,7 @@ public class FeedCaster {
 	
 	public static void main(String[] args) {
 		
-		SparkConf sparkConf = new SparkConf().setAppName("FeedRefiner").setMaster("local");
+		SparkConf sparkConf = new SparkConf().setAppName("FeedRefiner").setMaster("local[4]");
 		
 		// disabling default verbouse mode of the loggers
 		Logger.getLogger("org").setLevel(Level.FATAL);
