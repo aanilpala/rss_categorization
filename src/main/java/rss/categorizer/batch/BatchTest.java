@@ -9,12 +9,9 @@ import org.apache.spark.mllib.classification.NaiveBayes;
 import org.apache.spark.mllib.classification.NaiveBayesModel;
 import org.apache.spark.mllib.regression.LabeledPoint;
 import org.junit.Test;
-import rss.categorizer.batch.*;
-
 
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
 import static rss.categorizer.batch.BatchClassifier.createLabeledPoints;
 import static rss.categorizer.batch.BatchClassifier.createOneLabeledPoint;
 

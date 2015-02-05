@@ -1,4 +1,4 @@
-package rss.categorizer.util.feed;
+package rss.categorizer.util;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -9,6 +9,7 @@ import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.Locale;
 
+import org.apache.hadoop.fs.CommonConfigurationKeys;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.spark.SparkConf;
@@ -63,14 +64,14 @@ public class FeedCaster {
 	
 	public static void main(String[] args) {
 		
-		SparkConf sparkConf = new SparkConf().setAppName("FeedRefiner").setMaster("local[4]");
+		SparkConf sparkConf = new SparkConf().setAppName("FeedRefiner").setMaster("local[1]");
 		
 		// disabling default verbouse mode of the loggers
 		Logger.getLogger("org").setLevel(Level.FATAL);
 		Logger.getLogger("akka").setLevel(Level.FATAL);
 		
 		sparkConf.set("spark.hadoop.validateOutputSpecs", "false");
-		
+	    
 		JavaSparkContext ctx = new JavaSparkContext(sparkConf);	
 		JavaRDD<String>  lines = ctx.textFile("./src/main/resources/rss-arch.txt");
 		

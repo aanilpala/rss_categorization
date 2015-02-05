@@ -1,4 +1,4 @@
-package rss.categorizer.util.feed;
+package rss.categorizer.util;
 
 import java.io.Serializable;
 import java.text.DateFormat;
