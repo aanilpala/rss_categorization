@@ -5,20 +5,20 @@ import java.util.*;
 
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
-import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.api.java.function.PairFlatMapFunction;
 import org.apache.spark.api.java.function.PairFunction;
 import org.apache.spark.api.java.function.VoidFunction;
+import org.apache.spark.mllib.classification.NaiveBayes;
 import org.apache.spark.mllib.linalg.SparseVector;
 import org.apache.spark.mllib.regression.LabeledPoint;
+import org.apache.spark.rdd.RDD;
 import org.apache.spark.streaming.Duration;
 import org.apache.spark.streaming.api.java.JavaDStream;
 import org.apache.spark.streaming.api.java.JavaPairDStream;
 import org.apache.spark.streaming.api.java.JavaReceiverInputDStream;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
-import org.apache.hadoop.fs.CommonConfigurationKeys;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
@@ -41,35 +41,32 @@ public class Streamer {
 	private static Long training_interval = 24*Time.an_hour;
 	
 	private static boolean incremental_update = true;
-	
-	private static final NaiveBayesianWrapper nb = new NaiveBayesianWrapper(incremental_update); 
 
-	public static final String  HADOOP_SECURITY_GROUPS_CACHE_SECS = "hadoop.security.groups.cache.secs"; 
+	private static NaiveBayesianMiner nb;	
 	
 	public static void main(String[] args) {
 		
-	
 		
+	    
 		SparkConf conf = new SparkConf().setAppName("streamer").setMaster("local[2]");
-		SparkConf conf2 = new SparkConf().setAppName("classifier").setMaster("local[1]");
 		
-		// disabling default verbouse mode of the loggers
 		Logger.getLogger("org").setLevel(Level.FATAL);
-	    Logger.getLogger("akka").setLevel(Level.FATAL); 
+		Logger.getLogger("akka").setLevel(Level.FATAL);
 	    
 	    conf.set("spark.driver.allowMultipleContexts", "true");
-	    conf2.set("spark.driver.allowMultipleContexts", "true");
+	    
+	    
 	    
 		JavaStreamingContext ssc = new JavaStreamingContext(conf, new Duration(batch_interval));  //batch interval discretizes the continous input
-		JavaSparkContext sc = new JavaSparkContext(conf2);
+		
+		nb = new NaiveBayesianMiner(incremental_update);
+		
 		
 	    ssc.checkpoint("/tmp/spark/checkpoint");
 	    	    
 	    JavaReceiverInputDStream<String> stream = ssc.socketTextStream("localhost", 9999);
-
-	    nb.setSC(sc);
 	    
-	
+	    
 	    
 	    // String to Tuple3 Conversion
 	    JavaDStream<Tuple3<Long, String, String>> tuple_stream = stream.map(new Function<String, Tuple3<Long, String, String>>() {
@@ -88,8 +85,8 @@ public class Streamer {
 
 			@Override
 			public Boolean call(Tuple3<Long, String,String> tuple) throws Exception {
-				//if((tuple._1()/Time.scaling_factor % training_interval) < training_dur) return true;
-				//else return false;
+				//if((tuple._1()/Time.scaling_factor % training_interval) > training_dur) 
+				
 				return true;
 			}
 	    	
@@ -247,21 +244,21 @@ public class Streamer {
 		});
 		
 		
-		accumulated_dictionary_stream.foreach(new Function<JavaPairRDD<Integer,DictionaryEntry>, Void>() {
-
-			@Override
-			public Void call(JavaPairRDD<Integer, DictionaryEntry> v1)
-					throws Exception {
-				
-				if(!v1.collect().isEmpty())
-					nb.insert_into_dictionary_index(v1.collect().get(0)._2().getIndex());
-				
-				return null;
-			}
-			
-			
-			
-		});
+//		accumulated_dictionary_stream.foreach(new Function<JavaPairRDD<Integer,DictionaryEntry>, Void>() {
+//
+//			@Override
+//			public Void call(JavaPairRDD<Integer, DictionaryEntry> v1)
+//					throws Exception {
+//				
+//				if(!v1.collect().isEmpty())
+//					nb.insert_into_dictionary_index(v1.collect().get(0)._2().getIndex());
+//				
+//				return null;
+//			}
+//			
+//			
+//			
+//		});
 		
 		
 		
@@ -340,19 +337,26 @@ public class Streamer {
 				
 				
 				
-				System.out.println("STATE TEST: " + nb.getState());
+				System.out.println("STATE TEST: " + nb.getCurState());
 				
-				if(nb.getState() == 0) nb.setState(1);
-				else if(nb.getState() == 1){
+				if(nb.getCurState() == 0) nb.setCurState(1);
+				else if(nb.getCurState() == 1){
 					if((rdd._1._1/Time.scaling_factor % training_interval) > training_dur) {
-						nb.prepareModel();
-						nb.setState(2);
+						//nb.prepareModel();
+						
+						
+						//NaiveBayes.train(nb.sc.parallelize(nb.training_set).rdd());
+						
+						
+						
+						
+						nb.setCurState(2);
 					}
 				}
-				else if(nb.getState() == 2) {
+				else if(nb.getCurState() == 2) {
 					if((rdd._1._1/Time.scaling_factor % training_interval) < training_dur) {
-						nb.resetTrainingSession();
-						nb.setState(1);
+						//nb.resetTrainingSession();
+						nb.setCurState(1);
 					}
 					else; // keep predicting
 				}
@@ -383,10 +387,10 @@ public class Streamer {
 				
 				
 				
-				if(nb.getState() == 1) nb.insert_into_training_set(labeled_point);
-				else if(nb.getState() == 2) {
-					double prediction = nb.predict(features);
-					System.out.println("prediction: " + prediction + " - label: " + rdd._1._2);
+				if(nb.getCurState() == 1) nb.insert_into_training_set(labeled_point);
+				else if(nb.getCurState() == 2) {
+					//double prediction = nb.predict(features);
+					//System.out.println("prediction: " + prediction + " - label: " + rdd._1._2);
 				}
 				
 				return null;
@@ -423,6 +427,9 @@ public class Streamer {
 		tuple_stream.print();
 		ssc.start();
 	    ssc.awaitTermination();
+	    
+	
+	    
 	    
 	}
 	

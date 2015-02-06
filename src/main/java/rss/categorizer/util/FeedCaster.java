@@ -20,6 +20,7 @@ import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.Function2;
 
 import rss.categorizer.config.Time;
+import rss.categorizer.stream.NaiveBayesianMiner;
 import scala.Tuple2;
 import scala.Tuple3;
 
@@ -72,8 +73,11 @@ public class FeedCaster {
 		
 		sparkConf.set("spark.hadoop.validateOutputSpecs", "false");
 	    
+		//conf.set("spark.driver.allowMultipleContexts", "true");
+		
 		JavaSparkContext ctx = new JavaSparkContext(sparkConf);	
 		JavaRDD<String>  lines = ctx.textFile("./src/main/resources/rss-arch.txt");
+		
 		
 		JavaRDD<Tuple3<Long, String, String>> labeledText = lines.map(new Function<String, Tuple3<Long, String, String>>() {
 
