@@ -20,6 +20,7 @@ import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.Function2;
 
 import rss.categorizer.config.Time;
+import rss.categorizer.stream.Label;
 import rss.categorizer.stream.NaiveBayesianMiner;
 import scala.Tuple2;
 import scala.Tuple3;
@@ -119,6 +120,11 @@ public class FeedCaster {
 				
 				if(tuple._2().split(" |,").length < 5) return false; // Reject Feed Items with too less words
 				if(tuple._1() < 1421280000000L) return false;  // Reject Feed Items published before the 15th January, 00:00 GMT -data is too sparse prior to this point in time.
+				
+				// for debugging
+//				Integer label = Label.label_map.get(tuple._3());				
+//				if(label == 0 || label == 2 || label == 5) return false;
+				
 				else return true;
 			}
 		});

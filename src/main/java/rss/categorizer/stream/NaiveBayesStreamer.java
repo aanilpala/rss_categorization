@@ -7,6 +7,7 @@ import java.util.Set;
 
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
+import org.apache.spark.Accumulator;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaSparkContext;
@@ -34,15 +35,13 @@ import scala.reflect.internal.Symbols.TermSymbol;
 
 public class NaiveBayesStreamer {
 	
-	private static Long batch_interval = 18*Time.an_hour;
+	private static Long batch_interval = 5*24*Time.an_hour;
 	
-	private static Long training_dur = 18*Time.an_hour;
-	private static Long training_interval = 24*Time.an_hour;
+	private static Long training_dur = 5*24*Time.an_hour;
+	private static Long training_interval = 7*24*Time.an_hour;
 	
 	private static boolean incremental_update = true;
 	
-	private final static Map<Tuple2<Integer, Integer>, Integer> wordcounts = Maps.newHashMap();
-    private final static Map<Integer, Integer> wordsums = Maps.newHashMap();
 	
 	public static void main(String[] args) {
 		SparkConf conf = new SparkConf().setAppName("streamer").setMaster("local[2]");
@@ -54,9 +53,11 @@ public class NaiveBayesStreamer {
 	    ssc.checkpoint("/tmp/spark/checkpoint");
 	    JavaReceiverInputDStream<String> stream = ssc.socketTextStream("localhost", 9999);
 	    
-		final Broadcast<Map<Tuple2<Integer, Integer>, Integer>> word_counts = ssc.sc().broadcast(wordcounts);
-		final Broadcast<Map<Integer, Integer>> word_sums = ssc.sc().broadcast(wordsums);
 
+		//final Accumulator<Integer> totalSize = ssc.sc().accumulator(0);
+	    
+	    
+		
 	    // String to Tuple3 Conversion
 	    JavaDStream<Tuple3<Long, String, String>> tuple_stream = stream.map(new Function<String, Tuple3<Long, String, String>>() {
 
@@ -161,8 +162,28 @@ public class NaiveBayesStreamer {
 			
 		});
 	    
-	    // (label, term), (count, sum)
-	    JavaPairDStream<Tuple2<Integer, Integer>, Tuple2<Integer, Integer>> state = conditionals.mapToPair(new PairFunction<Tuple2<Tuple2<Integer,Integer>,Tuple2<Integer,Long>>, Integer, Tuple2<Integer, Integer>>() {
+	    JavaPairDStream<Tuple2<Integer, Integer>, Integer> total = sums.reduce(new Function2<Tuple2<Integer,Integer>, Tuple2<Integer,Integer>, Tuple2<Integer,Integer>>() {
+
+			@Override
+			public Tuple2<Integer, Integer> call(Tuple2<Integer, Integer> v1,
+					Tuple2<Integer, Integer> v2) throws Exception {
+				return new Tuple2<Integer, Integer>(-1, v1._2 + v2._2);
+			}
+		}).mapToPair(new PairFunction<Tuple2<Integer,Integer>, Tuple2<Integer,Integer>, Integer>() {
+
+			@Override
+			public Tuple2<Tuple2<Integer, Integer>, Integer> call(
+					Tuple2<Integer, Integer> t) throws Exception {
+				
+				return new Tuple2<Tuple2<Integer, Integer>, Integer>(new Tuple2<Integer, Integer>(-1,-1), t._2);
+			}
+			
+			
+		});
+	    
+	    
+	    // (label, term), (count, sum, prior)
+	    JavaPairDStream<Tuple2<Integer, Integer>, Tuple3<Integer, Integer, Double>> state = conditionals.mapToPair(new PairFunction<Tuple2<Tuple2<Integer,Integer>,Tuple2<Integer,Long>>, Integer, Tuple2<Integer, Integer>>() {
 
 			@Override
 			public Tuple2<Integer, Tuple2<Integer, Integer>> call(
@@ -171,16 +192,36 @@ public class NaiveBayesStreamer {
 				// TODO Auto-generated method stub
 				return new Tuple2<Integer, Tuple2<Integer, Integer>>(t._1._1, new Tuple2<Integer, Integer>(t._1._2, t._2._1));
 			}
-		}).join(sums).mapToPair(new PairFunction<Tuple2<Integer,Tuple2<Tuple2<Integer,Integer>,Integer>>, Tuple2<Integer, Integer>, Tuple2<Integer, Integer>> () {
+		}).join(sums).mapToPair(new PairFunction<Tuple2<Integer,Tuple2<Tuple2<Integer,Integer>,Integer>>, Tuple2<Integer, Integer>, Tuple3<Integer, Integer, Double>> () {
 
 			@Override
-			public Tuple2<Tuple2<Integer, Integer>, Tuple2<Integer, Integer>> call(
+			public Tuple2<Tuple2<Integer, Integer>, Tuple3<Integer, Integer, Double>> call(
 					Tuple2<Integer, Tuple2<Tuple2<Integer, Integer>, Integer>> t)
 					throws Exception {
 				// TODO Auto-generated method stub
-				return new Tuple2<Tuple2<Integer, Integer>, Tuple2<Integer, Integer>>(new Tuple2<Integer, Integer>(t._1, t._2._1._1), new Tuple2<Integer, Integer>(t._2._1._2, t._2._2));
+				return new Tuple2<Tuple2<Integer, Integer>, Tuple3<Integer, Integer, Double>>(new Tuple2<Integer, Integer>(t._1, t._2._1._1), new Tuple3<Integer, Integer, Double>(t._2._1._2, t._2._2, (double) t._2._2));
+			}
+		}).leftOuterJoin(total).mapToPair(new PairFunction<Tuple2<Tuple2<Integer,Integer>,Tuple2<Tuple3<Integer,Integer,Double>,Optional<Integer>>>, Tuple2<Integer, Integer>, Tuple3<Integer, Integer, Double>>() {
+
+			@Override
+			public Tuple2<Tuple2<Integer, Integer>, Tuple3<Integer, Integer, Double>> call(
+					Tuple2<Tuple2<Integer, Integer>, Tuple2<Tuple3<Integer, Integer, Double>, Optional<Integer>>> t)
+					throws Exception {
+				
+				Tuple3<Integer, Integer, Double> to_update = t._2._1;
+				
+				Integer sum = 0;
+				
+				if(t._2._2.isPresent()) 
+					sum = t._2._2.get();
+				
+				Tuple2<Integer, Integer> key = t._1;
+				
+				return new Tuple2<Tuple2<Integer, Integer>, Tuple3<Integer, Integer, Double>>(key, new Tuple3<Integer, Integer, Double>(to_update._1(), to_update._2(), to_update._3()/sum));
 			}
 		});
+		
+		
 	    
 	    
 	    
@@ -235,7 +276,10 @@ public class NaiveBayesStreamer {
 			public Boolean call(Tuple3<Long, String, String> t)
 					throws Exception {
 				if(t._1()*Time.scaling_factor % training_interval <= training_dur) return false;
-				else return true;
+				else {
+					//totalSize.add(1);
+					return true;
+				}
 			}
 		});
 	    
@@ -267,23 +311,27 @@ public class NaiveBayesStreamer {
 		});
 	    		
 	    // (timestamp, candidate), (contribition, label, sum)	
-	    JavaPairDStream<Tuple2<Long, Integer>, Tuple3<Double, Integer, Double>> partial_scores = test_stream_unfolded.join(state).mapToPair(new PairFunction<Tuple2<Tuple2<Integer,Integer>,Tuple2<Tuple2<Long,Integer>,Tuple2<Integer,Integer>>>, Tuple2<Long, Integer>, Tuple3<Double, Integer, Double>>() {
+	    JavaPairDStream<Tuple2<Long, Integer>, Tuple3<Double, Integer, Double>> partial_scores = test_stream_unfolded.join(state).mapToPair(new PairFunction<Tuple2<Tuple2<Integer,Integer>,Tuple2<Tuple2<Long,Integer>,Tuple3<Integer,Integer, Double>>>, Tuple2<Long, Integer>, Tuple3<Double, Integer, Double>>() {
 
 			@Override
 			public Tuple2<Tuple2<Long, Integer>, Tuple3<Double, Integer, Double>> call(
-					Tuple2<Tuple2<Integer, Integer>, Tuple2<Tuple2<Long, Integer>, Tuple2<Integer, Integer>>> t)
+					Tuple2<Tuple2<Integer, Integer>, Tuple2<Tuple2<Long, Integer>, Tuple3<Integer, Integer, Double>>> t)
 					throws Exception {
 				
-				int smoothing = 1;
-				Double contribition = Math.log((t._2._2._1 + smoothing) / (double) (t._2._2._2 + smoothing));
+				double smoothing = 0.1;
+				Double contribition = Math.log((t._2._2._1() + smoothing) / (double) (t._2._2._2() + smoothing));
 				
 				Tuple2<Long, Integer> index = new Tuple2<Long, Integer>(t._2._1._1, t._1._1);
-				Tuple3<Double, Integer, Double> value = new Tuple3<Double, Integer, Double>(contribition, t._2._1._2, Math.log(t._2._2._2));
+				Tuple3<Double, Integer, Double> value = new Tuple3<Double, Integer, Double>(contribition, t._2._1._2, 0.0); //  Math.log(t._2._2._3()));
 				
 				return new Tuple2<Tuple2<Long, Integer>, Tuple3<Double, Integer, Double>>(index, value);
 			}
+
+		
 	    	
 		});
+	    
+	    
 	    
 	    JavaPairDStream<Integer, Integer> predictions = partial_scores.reduceByKey(new Function2<Tuple3<Double,Integer, Double>, Tuple3<Double,Integer, Double>, Tuple3<Double,Integer, Double>>() {
 
@@ -328,15 +376,20 @@ public class NaiveBayesStreamer {
 			
 		});
 	    
-//	    state.foreachRDD(new Function<JavaPairRDD<Tuple2<Integer,Integer>,Tuple2<Integer,Integer>>, Void>() {
+	    
+	    
+	    
+	    
+	    
+//	    state.foreachRDD(new Function<JavaPairRDD<Tuple2<Integer,Integer>,Tuple3<Integer,Integer, Double>>, Void>() {
 //
 //			@Override
 //			public Void call(
-//					JavaPairRDD<Tuple2<Integer, Integer>, Tuple2<Integer, Integer>> v1)
+//					JavaPairRDD<Tuple2<Integer, Integer>, Tuple3<Integer, Integer, Double>> v1)
 //					throws Exception {
 //				
-//				for(Tuple2<Tuple2<Integer, Integer>, Tuple2<Integer, Integer>> each : v1.collect()) {
-//					System.out.println(each._1._1 + "-" + each._1._2 + "-" + each._2._1);
+//				for(Tuple2<Tuple2<Integer, Integer>, Tuple3<Integer, Integer, Double>> each : v1.collect()) {
+//					System.out.println("(" + each._1._1 + ", " + each._1._2 + ") -" + each._2._1() + " - " + each._2._2() + " - " + each._2._3());
 //				}
 //				return null;
 //			}
@@ -345,23 +398,27 @@ public class NaiveBayesStreamer {
 //		});
 	    
 	    
-//	    predictions.foreachRDD(new Function<JavaPairRDD<Integer,Integer>, Void>() {
-//
-//			@Override
-//			public Void call(JavaPairRDD<Integer, Integer> v1) throws Exception {
-//				
-//				for(Tuple2<Integer, Integer> each : v1.collect()) {
-//					System.out.println(each._1 + " - " + each._2);
-//
-//				}
-//				
-//				//System.out.println("NAH");
-//				return null;
-//				
-//			}
-//	    	
-//	    	
-//		});
+	    predictions.foreachRDD(new Function<JavaPairRDD<Integer,Integer>, Void>() {
+
+			@Override
+			public Void call(JavaPairRDD<Integer, Integer> v1) throws Exception {
+				
+				int correct_num = 0;
+				
+				for(Tuple2<Integer, Integer> each : v1.collect()) {
+					//System.out.println(each._1 + " - " + each._2);
+					if(each._1 == each._2) correct_num++;
+
+				}
+
+				System.out.println("Accuracy: " + correct_num/ (double) v1.collect().size());
+				
+				return null;
+				
+			}
+	    	
+	    	
+		});
 	    
 //	    test_stream.mapToPair(new PairFunction<Tuple3<Long,String,String>, Integer, Integer>() {
 //
@@ -470,7 +527,8 @@ public class NaiveBayesStreamer {
 //		});
 	    
 	  
-	    predictions.print();
+	    total.print();
+	    //predictions.print();
 	    //state.print();
 	    //test_stream_unfolded.print();
 	    //partial_scores.print();
