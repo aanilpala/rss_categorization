@@ -54,10 +54,10 @@ public class BatchClassifier {
 
         // creates Trainingset and adds words of Trainingset to Dictionary within the given period
         // TODO rewrite times/periods, now timestamp
-        List<LabeledPoint> Traininglist = createLabeledPoints(batchModel.data,1422742999000L, 1422751686000L, batchModel.dic);
+        List<LabeledPoint> Traininglist = createLabeledPoints(batchModel.data,1421280236000L, 1421970912000L, batchModel.dic);
         System.out.println(Traininglist.size());
 
-        JavaRDD<LabeledPoint> TraingingSet = batchModel.sc.parallelize(Traininglist.subList(0,100));
+        JavaRDD<LabeledPoint> TraingingSet = batchModel.sc.parallelize(Traininglist);
 
 
 
@@ -65,13 +65,15 @@ public class BatchClassifier {
         final NaiveBayesModel model = NaiveBayes.train(TraingingSet.rdd(), 1.0);
 
 
-        List<LabeledPoint> testList = createLabeledPoints(batchModel.data,1422620414000L, 1422635169000L, batchModel.dic);
+        List<LabeledPoint> testList = createLabeledPoints(batchModel.data,1421970912000L, 1422045119000L, batchModel.dic);
         System.out.println(testList.size());
 
-        JavaRDD<LabeledPoint> TestSet = batchModel.sc.parallelize(testList.subList(0,500));
+        JavaRDD<LabeledPoint> TestSet = batchModel.sc.parallelize(testList.subList(0,300));
 
-        LabeledPoint singlePoint =  createOneLabeledPoint(1.0,"in controversial circumstances to reach the africa cup of nations ", batchModel.dic);
-        System.out.println("single Point Prediction: " + model.predict(singlePoint.features()));
+   //     LabeledPoint singlePoint =  createOneLabeledPoint(1.0,"in controversial circumstances to reach the africa cup of nations ", batchModel.dic);
+   //     System.out.println("single Point Prediction: " + model.predict(singlePoint.features()));
+
+        System.out.println(TestSet.first());
 
 
         JavaPairRDD<Double, Double> predictionAndLabel =
