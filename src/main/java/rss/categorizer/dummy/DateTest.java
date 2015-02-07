@@ -5,6 +5,12 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Locale;
 
+import com.google.common.base.Charsets;
+import com.google.common.hash.HashFunction;
+import com.google.common.hash.Hashing;
+
+import akka.util.HashCode;
+
 public class DateTest {
 
 	
@@ -19,7 +25,7 @@ public class DateTest {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-
 		
+
 	}
 }

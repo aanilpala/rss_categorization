@@ -10,6 +10,7 @@ import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.api.java.function.PairFlatMapFunction;
 import org.apache.spark.api.java.function.PairFunction;
 import org.apache.spark.api.java.function.VoidFunction;
+import org.apache.spark.broadcast.Broadcast;
 import org.apache.spark.mllib.classification.NaiveBayes;
 import org.apache.spark.mllib.linalg.SparseVector;
 import org.apache.spark.mllib.regression.LabeledPoint;
@@ -22,6 +23,8 @@ import org.apache.spark.streaming.api.java.JavaStreamingContext;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
+import akka.util.HashCode;
+
 import com.google.common.base.Optional;
 
 import rss.categorizer.config.Time;
@@ -29,15 +32,16 @@ import rss.categorizer.model.*;
 import rss.categorizer.util.TFIDF;
 import scala.Tuple2;
 import scala.Tuple3;
+import scala.runtime.BoxedUnit;
 
 
 public class Streamer {
 
 	//public static Long window_duration = 2*TimeConversion.an_hour;
 	//public static Long sliding_interval= 2*TimeConversion.an_hour;
-	private static Long batch_interval = 6*Time.an_hour;
+	private static Long batch_interval = 8*Time.an_hour;
 	
-	private static Long training_dur = 6*Time.an_hour;
+	private static Long training_dur = 8*Time.an_hour;
 	private static Long training_interval = 24*Time.an_hour;
 	
 	private static boolean incremental_update = true;
@@ -57,9 +61,11 @@ public class Streamer {
 	    
 	    
 	    
-		JavaStreamingContext ssc = new JavaStreamingContext(conf, new Duration(batch_interval));  //batch interval discretizes the continous input
+		final JavaStreamingContext ssc = new JavaStreamingContext(conf, new Duration(batch_interval));  //batch interval discretizes the continous input
 		
 		nb = new NaiveBayesianMiner(incremental_update);
+		
+		final Broadcast<NaiveBayesianMiner> broadcasted_nb = ssc.sc().broadcast(nb);
 		
 		
 	    ssc.checkpoint("/tmp/spark/checkpoint");
@@ -85,7 +91,8 @@ public class Streamer {
 
 			@Override
 			public Boolean call(Tuple3<Long, String,String> tuple) throws Exception {
-				//if((tuple._1()/Time.scaling_factor % training_interval) > training_dur) 
+				//if((tuple._1()/Time.scaling_factor % training_interval) < training_dur) return true;
+				//else return false;
 				
 				return true;
 			}
@@ -109,7 +116,7 @@ public class Streamer {
 					Tuple2<Integer, DictionaryEntry> dictionaryStreamEntry = new Tuple2<Integer, DictionaryEntry>(dictionaryEntry.getIndex(), dictionaryEntry);
 					
 					bag.add(dictionaryStreamEntry);
-					nb.insert_into_dictionary_index(term.hashCode());
+					broadcasted_nb.value().insert_into_dictionary_index(term.hashCode()/2);
 				}
 				
 				return bag;
@@ -172,7 +179,7 @@ public class Streamer {
 				Integer label = Label.label_map.get(tuple_stream_item._2()); 
 				
 				for(String w: tokens){
-					int index = w.hashCode();
+					int index = w.hashCode()/2;
 					hashkeys.add(new Tuple2<Integer, Tuple2<Integer, Long>>(index, new Tuple2<Integer, Long>(label, timestamp)));
 				}
 
@@ -262,40 +269,40 @@ public class Streamer {
 		
 		
 		
-		labeled_points.foreachRDD(new Function<JavaPairRDD<Tuple2<Long, Integer>,Tuple2<Integer,List<Tuple3<Integer, Integer, Integer>>>>, Void>() {
-
-			@Override
-			public Void call(
-					JavaPairRDD<Tuple2<Long, Integer>, Tuple2<Integer, List<Tuple3<Integer, Integer, Integer>>>> v1)
-					throws Exception {
-			
-				
-				
-				v1.foreach(new VoidFunction<Tuple2<Tuple2<Long, Integer>, Tuple2<Integer, List<Tuple3<Integer, Integer, Integer>>>>>() {
-					
-					@Override
-					public void call(
-							Tuple2<Tuple2<Long, Integer>, Tuple2<Integer, List<Tuple3<Integer, Integer, Integer>>>> t)
-							throws Exception {
-					
-						System.out.print(t._2._1 + " -> " );
-						
-						for(Tuple3<Integer, Integer, Integer> each : t._2._2) {
-							
-							System.out.print(each._1() + " : " + each._2() + ", "  + each._3() + ", " );
-						}
-							
-						System.out.println();
-						
-				
-					}
-
-					
-				});
-				return null;
-			
-
-		}});
+//		labeled_points.foreachRDD(new Function<JavaPairRDD<Tuple2<Long, Integer>,Tuple2<Integer,List<Tuple3<Integer, Integer, Integer>>>>, Void>() {
+//
+//			@Override
+//			public Void call(
+//					JavaPairRDD<Tuple2<Long, Integer>, Tuple2<Integer, List<Tuple3<Integer, Integer, Integer>>>> v1)
+//					throws Exception {
+//			
+//				
+//				
+//				v1.foreach(new VoidFunction<Tuple2<Tuple2<Long, Integer>, Tuple2<Integer, List<Tuple3<Integer, Integer, Integer>>>>>() {
+//					
+//					@Override
+//					public void call(
+//							Tuple2<Tuple2<Long, Integer>, Tuple2<Integer, List<Tuple3<Integer, Integer, Integer>>>> t)
+//							throws Exception {
+//					
+//						System.out.print(t._1._1 + "size: " + t._2()._2.size() + " -> )");
+//						
+//						for(Tuple3<Integer, Integer, Integer> each : t._2._2) {
+//							
+//							System.out.print(each._1() + " : " + each._2() + ", "  + each._3() + ", " );
+//						}
+//							
+//						System.out.println();
+//						
+//				
+//					}
+//
+//					
+//				});
+//				return null;
+//			
+//
+//		}});
 		
 		
 		
@@ -333,65 +340,74 @@ public class Streamer {
 					throws Exception {
 				
 				if(v1.collect().isEmpty()) return null;
-				Tuple2<Tuple2<Long, Integer>, Tuple2<Integer, List<Tuple3<Integer, Integer, Integer>>>> rdd = v1.collect().get(0);
+				List<Tuple2<Tuple2<Long, Integer>, Tuple2<Integer, List<Tuple3<Integer, Integer, Integer>>>>> rdd_list = v1.collect();
 				
 				
-				
-				System.out.println("STATE TEST: " + nb.getCurState());
-				
-				if(nb.getCurState() == 0) nb.setCurState(1);
-				else if(nb.getCurState() == 1){
-					if((rdd._1._1/Time.scaling_factor % training_interval) > training_dur) {
-						//nb.prepareModel();
+				if(broadcasted_nb.value().getCurState() == 1){
+					if((rdd_list.get(0)._1._1/Time.scaling_factor % training_interval) >= training_dur && broadcasted_nb.value().getDictionarySize() > 0 && broadcasted_nb.value().training_set.size() > 0) {
 						
 						
-						//NaiveBayes.train(nb.sc.parallelize(nb.training_set).rdd());
-						
-						
-						
-						
-						nb.setCurState(2);
+						broadcasted_nb.value().setCurState(2);
+						broadcasted_nb.value().prepareModel(ssc.sc());
 					}
 				}
-				else if(nb.getCurState() == 2) {
-					if((rdd._1._1/Time.scaling_factor % training_interval) < training_dur) {
-						//nb.resetTrainingSession();
-						nb.setCurState(1);
+				else if(broadcasted_nb.value().getCurState() == 2) {
+					if((rdd_list.get(0)._1._1/Time.scaling_factor % training_interval) < training_dur) {
+						broadcasted_nb.value().resetTrainingSession();
 					}
 					else; // keep predicting
 				}
 				
 				
-					
-				List<Tuple3<Integer, Integer, Integer>> index_feature_list = rdd._2._2;
-				int indices_array[] = new int[index_feature_list.size()];
-				double features_list[] = new double[index_feature_list.size()];
-					
-				Integer max_tf = 0;
-				int ctr = 0;
-				for(Tuple3<Integer, Integer, Integer> index_feature_item : index_feature_list) {
-					indices_array[ctr++] = (index_feature_item._1());
-					if(max_tf < index_feature_item._3()) max_tf = index_feature_item._3();
-				}
-					
-				ctr = 0;
-				for(Tuple3<Integer, Integer, Integer> index_feature_item : index_feature_list) {
-					features_list[ctr++] = TFIDF.computeTFIDF(nb.getDictionarySize(), index_feature_item._2(), index_feature_item._3(), max_tf);
-				}
-					
-				Arrays.sort(indices_array);
-				Arrays.sort(features_list);
-					
-				SparseVector features = new SparseVector(nb.getDictionarySize(), indices_array, features_list);
-				LabeledPoint labeled_point = new LabeledPoint((double) rdd._1._2, features);
+				//System.out.println("Dict Size: " + broadcasted_nb.value().getDictionarySize());
 				
 				
 				
-				if(nb.getCurState() == 1) nb.insert_into_training_set(labeled_point);
-				else if(nb.getCurState() == 2) {
-					//double prediction = nb.predict(features);
-					//System.out.println("prediction: " + prediction + " - label: " + rdd._1._2);
+				for(Tuple2<Tuple2<Long, Integer>, Tuple2<Integer, List<Tuple3<Integer, Integer, Integer>>>> rdd : rdd_list) {
+					
+					//System.out.println(rdd._1._1 + "size: " + rdd._2()._2.size());
+					
+						
+					List<Tuple3<Integer, Integer, Integer>> index_feature_list = rdd._2._2;
+					int indices_array[] = new int[index_feature_list.size()];
+					double features_list[] = new double[index_feature_list.size()];
+						
+					Integer max_tf = 0;
+					int ctr = 0;
+					for(Tuple3<Integer, Integer, Integer> index_feature_item : index_feature_list) {
+						indices_array[ctr++] = (index_feature_item._1());
+						if(max_tf < index_feature_item._3()) max_tf = index_feature_item._3();
+					}
+						
+					ctr = 0;
+					for(Tuple3<Integer, Integer, Integer> index_feature_item : index_feature_list) {
+						features_list[ctr++] = TFIDF.computeTFIDF(20000, index_feature_item._2(), index_feature_item._3(), max_tf);
+					}
+						
+					Arrays.sort(indices_array);
+					Arrays.sort(features_list);
+						
+					SparseVector features = new SparseVector(200000, indices_array, features_list);
+					LabeledPoint labeled_point = new LabeledPoint((double) rdd._1._2, features);
+					
+					
+					
+					if(broadcasted_nb.value().getCurState() == 1) broadcasted_nb.value().insert_into_training_set(labeled_point);
+					else if(broadcasted_nb.value().getCurState() == 2) {
+						
+//						for(LabeledPoint each : broadcasted_nb.value().training_set) {
+//							System.out.println(each.features().toString());
+//						}
+						
+						double prediction = broadcasted_nb.value().predict(features);
+						System.out.println("prediction: " + prediction + " - label: " + rdd._1._2);
+					}
 				}
+				
+				
+				if(broadcasted_nb.value().getCurState() == 2 && (rdd_list.get(0)._1._1/Time.scaling_factor % training_interval) < training_dur)
+					broadcasted_nb.value().setCurState(1);
+				
 				
 				return null;
 				
