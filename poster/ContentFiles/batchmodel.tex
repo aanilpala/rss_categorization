@@ -1,2 +1,8 @@
-\begin{center} \textbf{\huge Batch Model} \end{center}
-Very sophisticated stuff.Very sophisticated stuff.Very sophisticated stuff. Very sophisticated stuff.
+\begin{center} \textbf{\huge Methodology} \end{center}
+\textbf{\large Batch and On-line}\\
+We compare three different approaches of learning: A Batch Model, a Bruteforce Model and an Incremental Model. Therefore the 
+the batch model implements a classic Traing-Testing-Phase setup. A subset of training points are pre-collected from a stream and used to build a final model which applying with testing data will lead to accurency performance measures. Besides the mentioned shortcomings of accurancy performance this approach is problematic in terms of available memory and runtime of the algorithm and therefore often not feasable. We are using a batch model as a reference model for evaluation to compare the flexible On-line learning to static batch learning. On the other hand On-line Learning will change the model with the arriving of new data points.\\
+\textbf{\large Bruteforce}\\
+The bruteforce approach updates the model after a period of time through retraining. Based on a sliding window over the stream with a constant number of data points the model is rebuilt.\\
+\textbf{\large Incremental}\\
+
