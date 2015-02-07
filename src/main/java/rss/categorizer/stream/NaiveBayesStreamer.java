@@ -266,42 +266,45 @@ public class NaiveBayesStreamer {
 	    	
 		});
 	    		
-	    // (timestamp, candidate), (contribition, label)	
-	    JavaPairDStream<Tuple2<Long, Integer>, Tuple2<Double, Integer>> partial_scores = test_stream_unfolded.join(state).mapToPair(new PairFunction<Tuple2<Tuple2<Integer,Integer>,Tuple2<Tuple2<Long,Integer>,Tuple2<Integer,Integer>>>, Tuple2<Long, Integer>, Tuple2<Double, Integer>>() {
+	    // (timestamp, candidate), (contribition, label, sum)	
+	    JavaPairDStream<Tuple2<Long, Integer>, Tuple3<Double, Integer, Double>> partial_scores = test_stream_unfolded.join(state).mapToPair(new PairFunction<Tuple2<Tuple2<Integer,Integer>,Tuple2<Tuple2<Long,Integer>,Tuple2<Integer,Integer>>>, Tuple2<Long, Integer>, Tuple3<Double, Integer, Double>>() {
 
 			@Override
-			public Tuple2<Tuple2<Long, Integer>, Tuple2<Double, Integer>> call(
+			public Tuple2<Tuple2<Long, Integer>, Tuple3<Double, Integer, Double>> call(
 					Tuple2<Tuple2<Integer, Integer>, Tuple2<Tuple2<Long, Integer>, Tuple2<Integer, Integer>>> t)
 					throws Exception {
 				
-				int smoothing = 10;
+				int smoothing = 1;
 				Double contribition = Math.log((t._2._2._1 + smoothing) / (double) (t._2._2._2 + smoothing));
 				
 				Tuple2<Long, Integer> index = new Tuple2<Long, Integer>(t._2._1._1, t._1._1);
-				Tuple2<Double, Integer> value = new Tuple2<Double, Integer>(contribition, t._2._1._2);
+				Tuple3<Double, Integer, Double> value = new Tuple3<Double, Integer, Double>(contribition, t._2._1._2, Math.log(t._2._2._2));
 				
-				return new Tuple2<Tuple2<Long, Integer>, Tuple2<Double, Integer>>(index, value);
+				return new Tuple2<Tuple2<Long, Integer>, Tuple3<Double, Integer, Double>>(index, value);
 			}
 	    	
 		});
 	    
-	    JavaPairDStream<Integer, Integer> predictions = partial_scores.reduceByKey(new Function2<Tuple2<Double,Integer>, Tuple2<Double,Integer>, Tuple2<Double,Integer>>() {
+	    JavaPairDStream<Integer, Integer> predictions = partial_scores.reduceByKey(new Function2<Tuple3<Double,Integer, Double>, Tuple3<Double,Integer, Double>, Tuple3<Double,Integer, Double>>() {
 
 			@Override
-			public Tuple2<Double, Integer> call(Tuple2<Double, Integer> v1,
-					Tuple2<Double, Integer> v2) throws Exception {
-				// TODO Auto-generated method stub
-				return new Tuple2<Double, Integer>(v1._1+v2._1, v1._2);
+			public Tuple3<Double, Integer, Double> call(Tuple3<Double, Integer, Double> v1,
+					Tuple3<Double, Integer, Double> v2) throws Exception {
+				
+//				System.out.println(v1._2() + "-" + v2._2());
+//				System.out.println(v1._3() + "-" + v2._3());
+				
+				return new Tuple3<Double, Integer, Double>(v1._1() + v2._1(), v1._2(), v1._3());
 			}
 	    	
-		}).mapToPair(new PairFunction<Tuple2<Tuple2<Long,Integer>,Tuple2<Double,Integer>>, Long, Tuple3<Integer, Double, Integer>>() {
+		}).mapToPair(new PairFunction<Tuple2<Tuple2<Long,Integer>,Tuple3<Double,Integer, Double>>, Long, Tuple3<Integer, Double, Integer>>() {
 
 			@Override
 			public Tuple2<Long, Tuple3<Integer, Double, Integer>> call(
-					Tuple2<Tuple2<Long, Integer>, Tuple2<Double, Integer>> t)
+					Tuple2<Tuple2<Long, Integer>, Tuple3<Double, Integer, Double>> t)
 					throws Exception {
 				
-				return new Tuple2<Long, Tuple3<Integer, Double, Integer>>(t._1._1, new Tuple3<Integer, Double, Integer>(t._1._2, t._2._1, t._2._2));	
+				return new Tuple2<Long, Tuple3<Integer, Double, Integer>>(t._1._1, new Tuple3<Integer, Double, Integer>(t._1._2, t._2._1() + t._2._3(), t._2._2()));	
 			}
 		}).reduceByKey(new Function2<Tuple3<Integer,Double,Integer>, Tuple3<Integer,Double,Integer>, Tuple3<Integer,Double,Integer>>() {
 
@@ -325,21 +328,21 @@ public class NaiveBayesStreamer {
 			
 		});
 	    
-	    state.foreachRDD(new Function<JavaPairRDD<Tuple2<Integer,Integer>,Tuple2<Integer,Integer>>, Void>() {
-
-			@Override
-			public Void call(
-					JavaPairRDD<Tuple2<Integer, Integer>, Tuple2<Integer, Integer>> v1)
-					throws Exception {
-				
-				for(Tuple2<Tuple2<Integer, Integer>, Tuple2<Integer, Integer>> each : v1.collect()) {
-					System.out.println(each._1._1 + "-" + each._1._2 + "-" + each._2._1);
-				}
-				return null;
-			}
-	    	
-	    	
-		});
+//	    state.foreachRDD(new Function<JavaPairRDD<Tuple2<Integer,Integer>,Tuple2<Integer,Integer>>, Void>() {
+//
+//			@Override
+//			public Void call(
+//					JavaPairRDD<Tuple2<Integer, Integer>, Tuple2<Integer, Integer>> v1)
+//					throws Exception {
+//				
+//				for(Tuple2<Tuple2<Integer, Integer>, Tuple2<Integer, Integer>> each : v1.collect()) {
+//					System.out.println(each._1._1 + "-" + each._1._2 + "-" + each._2._1);
+//				}
+//				return null;
+//			}
+//	    	
+//	    	
+//		});
 	    
 	    
 //	    predictions.foreachRDD(new Function<JavaPairRDD<Integer,Integer>, Void>() {
