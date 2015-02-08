@@ -35,10 +35,10 @@ import scala.reflect.internal.Symbols.TermSymbol;
 
 public class NaiveBayesStreamer {
 	
-	private static Long batch_interval = 5*24*Time.an_hour;
+	private static Long batch_interval = 5*24*Time.an_hour_scaled;
 	
-	private static Long training_dur = 5*24*Time.an_hour;
-	private static Long training_interval = 7*24*Time.an_hour;
+	private static Long training_dur = 5*24*Time.an_hour_scaled;
+	private static Long training_interval = 7*24*Time.an_hour_scaled;
 	
 	private static boolean incremental_update = true;
 	
@@ -411,7 +411,7 @@ public class NaiveBayesStreamer {
 
 				}
 
-				System.out.println("Accuracy: " + correct_num/ (double) v1.collect().size());
+				System.out.println("Accuracy: " + correct_num / (double) v1.collect().size() * 100);
 				
 				return null;
 				

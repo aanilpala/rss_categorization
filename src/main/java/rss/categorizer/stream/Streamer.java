@@ -39,10 +39,10 @@ public class Streamer {
 
 	//public static Long window_duration = 2*TimeConversion.an_hour;
 	//public static Long sliding_interval= 2*TimeConversion.an_hour;
-	private static Long batch_interval = 8*Time.an_hour;
+	private static Long batch_interval = 8*Time.an_hour_scaled;
 	
-	private static Long training_dur = 8*Time.an_hour;
-	private static Long training_interval = 24*Time.an_hour;
+	private static Long training_dur = 8*Time.an_hour_scaled;
+	private static Long training_interval = 24*Time.an_hour_scaled;
 	
 	private static boolean incremental_update = true;
 

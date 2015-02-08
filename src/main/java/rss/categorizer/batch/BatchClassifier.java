@@ -11,18 +11,24 @@ import org.apache.spark.api.java.function.VoidFunction;
 import org.apache.spark.broadcast.Broadcast;
 import org.apache.spark.mllib.classification.NaiveBayes;
 import org.apache.spark.mllib.classification.NaiveBayesModel;
+import org.apache.spark.mllib.linalg.SparseVector;
 import org.apache.spark.mllib.linalg.Vector;
 import org.apache.spark.mllib.linalg.Vectors;
 import org.apache.spark.mllib.regression.LabeledPoint;
 import org.apache.spark.rdd.RDD;
+
+import scala.Array;
 import scala.Tuple1;
 import scala.Tuple2;
 import scala.Tuple3;
+
 import org.apache.spark.mllib.classification.*;
 import org.apache.spark.mllib.evaluation.BinaryClassificationMetrics;
+
 import rss.categorizer.model.Label;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -54,7 +60,7 @@ public class BatchClassifier {
 
         // creates Trainingset and adds words of Trainingset to Dictionary within the given period
         // TODO rewrite times/periods, now timestamp
-        List<LabeledPoint> Traininglist = createLabeledPoints(batchModel.data,1421280236000L, 1421970912000L, batchModel.dic);
+        List<LabeledPoint> Traininglist = createLabeledPoints(batchModel.data,1421487586000L, 1421825150000L, batchModel.dic);
         System.out.println(Traininglist.size());
 
         JavaRDD<LabeledPoint> TraingingSet = batchModel.sc.parallelize(Traininglist);
@@ -65,7 +71,7 @@ public class BatchClassifier {
         final NaiveBayesModel model = NaiveBayes.train(TraingingSet.rdd(), 1.0);
 
 
-        List<LabeledPoint> testList = createLabeledPoints(batchModel.data,1421970912000L, 1422045119000L, batchModel.dic);
+        List<LabeledPoint> testList = createLabeledPoints(batchModel.data,1421825150000L, 1422736296000L, batchModel.dic);
         System.out.println(testList.size());
 
         JavaRDD<LabeledPoint> TestSet = batchModel.sc.parallelize(testList.subList(0,300));
@@ -239,18 +245,21 @@ public class BatchClassifier {
             currentLabel = labels[i];
 
 
-            double[] featureVector = new double[dic.getSize()];
+            
             String[] words = point.split("\\s+");
+            int[] indices = new int[words.length]; 
+            double[] featureVector = new double[words.length];
+            
 
+            int ctr = 0;
             for(String w : words){
                 w = w.toLowerCase().replaceAll("[^\\dA-Za-z]", "").trim();
 
                 if(!w.isEmpty()) {
                     // index in dictionary for w
                     if(dic.getDictionary().containsKey(w)){
-                        index = dic.getDictionary().get(w).get(0);
-                        featureVector[index] += 1.0;
-
+                        indices[ctr] = dic.getDictionary().get(w).get(0);
+                        featureVector[ctr++] = 1.0;
                     }
                     else{
                         System.out.println(w + ": not found");
@@ -259,9 +268,12 @@ public class BatchClassifier {
                 }
             }
 
+            Arrays.sort(indices);
+            Arrays.sort(featureVector);
+            
 
             // LabeledPoint lP = new LabeledPoint(currentLabel, Vectors.sparse(dic.getSize(), dic.getIndexVector(), featureVector));
-            LabeledPoint lP = new LabeledPoint(currentLabel, Vectors.dense(featureVector));
+            LabeledPoint lP = new LabeledPoint(currentLabel, new SparseVector(dic.getSize(), indices, featureVector));
             pointList.add(lP);
             i++;
         }

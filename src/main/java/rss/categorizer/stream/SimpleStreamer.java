@@ -30,10 +30,10 @@ import scala.collection.Iterator;
 import scala.collection.mutable.HashMap;
 
 public class SimpleStreamer {
-	private static Long batch_interval = 6*Time.an_hour;
+	private static Long batch_interval = 6*Time.an_hour_scaled;
 	
-	private static Long training_dur = 6*Time.an_hour;
-	private static Long training_interval = 24*Time.an_hour;
+	private static Long training_dur = 6*Time.an_hour_scaled;
+	private static Long training_interval = 24*Time.an_hour_scaled;
 	
 	private static boolean incremental_update = true;
 

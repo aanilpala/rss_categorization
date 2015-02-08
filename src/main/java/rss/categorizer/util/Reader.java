@@ -10,6 +10,7 @@ import java.util.Locale;
 import rss.categorizer.model.Feed;
 import rss.categorizer.model.FeedItem;
 
+
 public class Reader {
 
 	private String feedUrl;
@@ -42,9 +43,12 @@ public class Reader {
 					}
 				}
 					    
-			} catch (ParseException | IOException e) {
+			} catch (ParseException e) {
 				//e.printStackTrace();
 				continue;
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 			}
 		 
 		}

@@ -118,7 +118,7 @@ public class FeedCaster {
 			@Override
 			public Boolean call(Tuple3<Long, String, String> tuple) throws Exception {
 				
-				if(tuple._2().split(" |,").length < 5) return false; // Reject Feed Items with too less words
+				if(tuple._2().replace("."," ").replaceAll("[^0-9A-Za-z]", " ").trim().split("\\s+", -1).length < 3) return false; // Reject Feed Items with too less words
 				if(tuple._1() < 1421280000000L) return false;  // Reject Feed Items published before the 15th January, 00:00 GMT -data is too sparse prior to this point in time.
 				
 				// for debugging
@@ -169,9 +169,9 @@ public class FeedCaster {
 		
 		sortedFeedItems.saveAsTextFile("./src/main/resources/refined");
 		
-		FeedCaster feedCaster = new FeedCaster("localhost", 9999);
-		
-		feedCaster.castList(sortedFeedItems.collect());
+//		FeedCaster feedCaster = new FeedCaster("localhost", 9999);
+//		
+//		feedCaster.castList(sortedFeedItems.collect());
 		
 		ctx.close();
 		
