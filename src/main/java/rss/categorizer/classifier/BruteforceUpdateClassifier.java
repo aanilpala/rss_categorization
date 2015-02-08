@@ -26,8 +26,8 @@ import scala.Tuple3;
 
 public class BruteforceUpdateClassifier {
 
-private static Integer update_freq = 750;
-private static Integer window_size = 500;
+private static Integer update_freq = 1000;
+private static Integer window_size = 750;
 	
     public static void main(String[] args) {
 		
