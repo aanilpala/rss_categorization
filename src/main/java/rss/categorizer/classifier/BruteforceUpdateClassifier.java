@@ -27,7 +27,7 @@ import scala.Tuple3;
 public class BruteforceUpdateClassifier {
 
 private static Integer update_freq = 1000;
-private static Integer window_size = 750;
+private static Integer window_size = 600;
 	
     public static void main(String[] args) {
 		
@@ -113,6 +113,9 @@ private static Integer window_size = 750;
 		}
 		JavaRDD<Tuple3<Long, String, String>> training_set = sc.parallelize(window.subList(tuple_ptr - window_size, tuple_ptr));
 		System.out.println("Training");
+//-------------------------------------------
+		System.out.println("First Trainging point: " + training_set.collect().get(0));
+		System.out.println("Last Trainging point: " + training_set.collect().get(window_size - 1));
 		// setup nbm
 		// timestamp, labeledpoint, label_representation
 		JavaRDD<LabeledPoint> training_labeled_points = training_set.map(new Function<Tuple3<Long,String,String>, Tuple3<Long, LabeledPoint, Double>> () {
@@ -170,6 +173,16 @@ private static Integer window_size = 750;
 		while(tuple_ptr < tuple_count) {
 			
 			if((tuple_ptr / (double) update_freq) > update_count) {
+//---------------------------------------------------------
+
+				if(update_count == 1) System.out.println("first Point in TEST window" + window.get(tuple_ptr - update_freq + window_size));
+				else  System.out.println("first Point in TEST window" + window.get(tuple_ptr - update_freq));
+				System.out.println("last Point in TEST window and last point in  new TRAINING: " + window.get(tuple_ptr - 1));
+				System.out.println("first Point in TRAINING window: " + window.get(tuple_ptr - window_size + 1));
+				System.out.println("Testset size: " + count);
+				System.out.println("accuracy of previous phase: " + correct_count / (double) count * 100);
+//---------------------------------------------------------
+
 				training_set = sc.parallelize(window.subList(tuple_ptr - window_size, tuple_ptr));
 				
 				System.out.println("ReTraining");
@@ -225,6 +238,11 @@ private static Integer window_size = 750;
 				nbm = NaiveBayes.train(training_labeled_points.rdd());
 				
 				update_count++;
+
+//---------------just test on the following batch of size update_freq, for having single results per window
+				count = 0;
+				correct_count = 0;
+//-----------------------------------------------------
 			}
 			else {
 				//System.out.println("Predicting");
@@ -274,7 +292,10 @@ private static Integer window_size = 750;
 		}
 		
 		
-		System.out.println("accuracy: " + correct_count / (double) count * 100);
+		System.out.println("last accuracy: " + correct_count / (double) count * 100);
+		System.out.println("first Point in TEST window" + window.get(tuple_ptr - update_freq));
+		System.out.println("last Point in TEST window: " + window.get(tuple_ptr - 1));
+		System.out.println("Testset size: " + count);
 
 				
 				

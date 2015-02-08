@@ -22,9 +22,9 @@ import rss.categorizer.util.Stopwords;
 import scala.Tuple3;
 
 public class ErrorTriggeredUpdateClassifier {
-	private static Double trigger_threshold = 0.75;
-	private static Integer window_size = 750;
-	private static Integer after_update = 5;
+	private static Double trigger_threshold = 0.63;
+	private static Integer window_size = 600;
+	private static Integer after_update = 300;
 
 		
 	    public static void main(String[] args) {
@@ -169,8 +169,13 @@ public class ErrorTriggeredUpdateClassifier {
 			while(tuple_ptr < tuple_count) {
 				
 				if(accuracy_since_last_update > 0 && accuracy_since_last_update < trigger_threshold  ) {
+//---------------------------------------------------
+					System.out.println("last new datapoint in window" + window.get(tuple_ptr - 1));
+					System.out.println("number of items in TESTSET: " + count_since_last_update);
+					System.out.println("accuracy since last update: " + accuracy_since_last_update);
+
 					training_set = sc.parallelize(window.subList(tuple_ptr - window_size, tuple_ptr));
-					
+
 					System.out.println("ReTraining");
 					// setup nbm
 					// timestamp, labeledpoint, label_representation
@@ -274,6 +279,7 @@ public class ErrorTriggeredUpdateClassifier {
 					
 				}
 				else {
+
 					//System.out.println("Predicting");
 					Tuple3<Long, String, String> t = data_tuples_at_driver.get(tuple_ptr++);
 					window.add(t);
@@ -321,7 +327,7 @@ public class ErrorTriggeredUpdateClassifier {
 				}
 				
 				accuracy_since_last_update = correct_count_since_last_update/ (double) count_since_last_update;
-				System.out.println("accuracy since last update: " + accuracy_since_last_update);
+				//System.out.println("accuracy since last update: " + accuracy_since_last_update);
 				
 			}
 			

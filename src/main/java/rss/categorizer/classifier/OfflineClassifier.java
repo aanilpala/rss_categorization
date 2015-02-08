@@ -2,6 +2,7 @@ package rss.categorizer.classifier;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
@@ -23,7 +24,7 @@ import scala.Tuple3;
 
 public class OfflineClassifier {
 
-	private static Long training_interval = 3*24*Time.an_hour;
+	private static Long training_interval = 4*24*Time.an_hour;
 	
     public static void main(String[] args) {
 		
@@ -34,6 +35,8 @@ public class OfflineClassifier {
 		
 		JavaSparkContext sc = new JavaSparkContext(conf);
 		JavaRDD<String> raw_data = sc.textFile("./src/main/resources/refined/part-00000");
+
+		System.out.println(raw_data.collect().size());
 		
 		JavaRDD<String> raw_dictionary = sc.textFile("./src/main/resources/dictionary");
 		
@@ -111,13 +114,20 @@ public class OfflineClassifier {
 			@Override
 			public Boolean call(Tuple3<Long, String, String> t)
 					throws Exception {
+//------------------------------------------------------------
 				if((t._1() - 1421280000000L) / (double) training_interval > 1.0) return true;
+			//	if((t._1() - 1421280000000L) / (double) training_interval > 3 && (t._1() - 1421280000000L) / (double) training_interval < 5.0 ) return true;
 				else return false;
 			}
 			
 		});
-		
-		
+
+
+//---------------------------------------
+		System.out.println("First Trainingpoint: " + training_tuples.first());
+		System.out.println("First Testpoint: " + test_tuples.first());
+
+
 		// timestamp, labeledpoint, label_representation
 		JavaRDD<Tuple3<Long, LabeledPoint, Double>> timestamped_labeled_training_points = training_tuples.map(new Function<Tuple3<Long,String,String>, Tuple3<Long, LabeledPoint, Double>> () {
 
@@ -246,7 +256,19 @@ public class OfflineClassifier {
 			}
 			count++;
 		}
-		
+
+		List<Tuple3<Long, String, String>> listOfTrainingPoints = training_tuples.collect();
+		int numberOfTrainingpoints = listOfTrainingPoints.size();
+		Tuple3<Long, String, String> lastPointTraining = listOfTrainingPoints.get(numberOfTrainingpoints - 1);
+
+		List<Tuple3<Long, String, String>> listOfTestPoints = test_tuples.collect();
+		int numberOfTestpoints = listOfTestPoints.size();
+		//Tuple3<Long, String, String> lastPointTest = listOfTestPoints.get(numberOfTrainingpoints - 1);
+
+		System.out.println("last Training Point: " + lastPointTraining );
+	//	System.out.println("last Test Point: " + lastPointTest );
+		System.out.println("Number of Testpoints: " + numberOfTestpoints + ", Number of Trainingpoints: " + numberOfTrainingpoints);
+		System.out.println(count);
 		System.out.println("accuracy: " + correct_count / (double) count * 100);
     	
 	}		
