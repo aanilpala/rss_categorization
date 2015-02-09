@@ -15,13 +15,13 @@
 
 %colums and boxes
 \usepackage{multicol}
-\setlength{\fboxrule}{1.50mm} %lines
+\setlength{\fboxrule}{1.5mm} %lines
 \setlength{\fboxsep}{10mm} %margin text relation
 \setlength{\columnsep}{15mm}     %colum space
 \setlength{\columnseprule}{4pt}  % lines between columns
 
 %page settings
-\renewcommand\baselinestretch{1.35}
+\renewcommand\baselinestretch{1.2}
 \parskip=0.5\baselineskip
 \topmargin-30pt
 \marginparwidth0mm
@@ -71,44 +71,54 @@ Scalable Data Analytics and Data Mining}
 
 \vspace{0.8cm}
 %create second Box
-\fcolorbox{darkgreen}{white}{\parbox{\textwidth}{%
-
-    \begin{multicols}{3}      
-      \input{ContentFiles/batchmodel} %changed to Methodology
-     % \input{ContentFiles/bruteforcemodel} 
-      %\input{ContentFiles/incrementalmodel} 
-    \end{multicols}}}
-
-\vspace{0.8cm}
-%create third Box
 \fcolorbox{darkgreen}{white}{\parbox{0.4775 \textwidth}{%
       \input{ContentFiles/dataAndSetup}
 }}
 \hspace{0.8cm}
-%create 4. Box
+%create 3. Box
 \fcolorbox{darkgreen}{white}{\parbox{0.4775 \textwidth}{%
       \input{ContentFiles/streaming}}}
 \hspace{0.8cm}
 
 
 \vspace{0.8cm}
-%create 5. Box
-\fcolorbox{darkgreen}{white}{\parbox{0.4775 \textwidth}{%
-\begin{centering}
-      \includegraphics[width=0.2\textwidth]{./pic1}\\
-Some picture with stuff
-\end{centering}
- %     \includegraphics[width=0.15\textwidth]{./pic2}
-}}
-\hspace{0.8cm}
-%create 6. Box
-\fcolorbox{darkgreen}{white}{\parbox{0.4775 \textwidth}{%
-\begin{centering}
-   \includegraphics[width=0.2\textwidth]{./pic2}\\
-some other graphic
-\end{centering}}}
+%create 4. Box
+\fcolorbox{darkgreen}{white}{\parbox{\textwidth}{%
+
+    \begin{multicols}{4}      
+      \input{ContentFiles/methology} %changed to Methodology
+    \end{multicols}}}
 
 \vspace{0.8cm}
+%create 5. Box: BATCH----------------------------------------------------------------------------------------
+\fcolorbox{darkgreen}{white}{\parbox{0.24 \textwidth}{%
+\textbf{Batch}\\
+
+For Offline learing the model was built within the first three days out of 600 data points. The following four days with 1248 data points created the first test set for this model. A second and a third test set where created after the previous testphase and contained 1102 and 1172 data points, respectivly RSS feeds.\\
+
+      \includegraphics[width=0.24\textwidth]{./OfflineModel.png}\\
+}}
+\hspace{0.8cm}
+%create 6. Box: Bruteforce and Errortriggered ----------------------------------------------------------------
+\fcolorbox{darkgreen}{white}{\parbox{0.4775 \textwidth}{%
+    \begin{multicols}{2}    
+\textbf{Bruteforce and Error-triggered}\\
+
+The window size for the bruteforce model contains 600 data points. After 400 test points we led it retrain with the last 600 data points. We then waited for 1000 data points and second retrain phase followed which was tested also with 1000 new data points.\\
+
+   \includegraphics[width=0.2\textwidth]{./BruteforceModel}\\
+The window size of the error-triggered model is constructed like the bruteforce update out of 600 datapoints. Due to our observations an diserable accurency threshold of 63\% seamed reasonable. A sanity window of testpoints ensures that at least 300 new data points arrive and based on their performance the model is rebuild or not.\\
+
+   \includegraphics[width=0.2\textwidth]{./Errortriggered}
+\end{multicols}}}
+\hspace{0.8cm}
+\fcolorbox{darkgreen}{white}{\parbox{0.18 \textwidth}{%
+\textbf{Incremental updates}\\
+
+
+ 
+}}
+
 %create 7. Box
 \fcolorbox{darkgreen}{white}{\parbox{\textwidth}{%
    \input{ContentFiles/results}\\

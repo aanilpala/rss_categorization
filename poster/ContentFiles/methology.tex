@@ -1,0 +1,11 @@
+\begin{center} \textbf{\huge Methodology} \end{center}
+\textbf{\large Batch and On-line}\\
+The batch model implements a classic Traing-Testing-Phase setup. A subset training points are pre-collected from a stream and used to build a final model on  which three testsets are applied. The batch model functions as a reference model to observe the performance of the initial training over time. \\
+\textbf{\large Bruteforce}\\
+On the other hand On-line Learning will change the model with the arriving of new data points.
+The bruteforce approach updates the model after a period of time through retraining. Based on a sliding window over the stream with a constant number of data points 
+the model is rebuilt.\\
+\textbf{\large Threshold-triggered}\\
+As a variation of the bruteforce model-update the threshold triggered one will rebuild the model on a sliding window as soon as the performance of our model is beneth a certain threshold. \\
+\textbf{\large Incremental}\\
+The incremental model updates the models properties with new arriving data points. \color{red}TODO TODO TODO TODOTODO TODOTODO TODOTODO TODOTODO TODOTODO TODOTODO TODOTODO TODOTODO TODOTODO TODOTODO TODOTODO TODO
