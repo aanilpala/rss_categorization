@@ -66,7 +66,6 @@ Scalable Data Analytics and Data Mining}
 
     \begin{multicols}{2}      
       \input{ContentFiles/motivation}
-    %  \input{ContentFiles/background} 
     \end{multicols}}}
 
 \vspace{0.8cm}
@@ -119,15 +118,17 @@ The window size of the error-triggered model is constructed like the bruteforce 
  
 }}
 
-%create 7. Box
+%create 7. Box: Results --------------------------------------------------------------------------------------
 \fcolorbox{darkgreen}{white}{\parbox{\textwidth}{%
-   \input{ContentFiles/results}\\
-\begin{centering}
-   \includegraphics[width=0.2\textwidth]{./pic3}
-   \includegraphics[width=0.2\textwidth]{./pic3}
-   \includegraphics[width=0.2\textwidth]{./pic3}
-   \includegraphics[width=0.2\textwidth]{./pic3}\\
-\end{centering}}}
+The offline versions result with 1000 test points per intervall is always around 60\% even though it decreased at the last testing phase. 
+   \includegraphics[width=0.2\textwidth]{./batchPlot.png}\\
+
+The bruteforce model which updates after 
+   \includegraphics[width=0.2\textwidth]{./bruteforcePlot.png}
+   \includegraphics[width=0.2\textwidth]{./errortriggeredPlot}
+   \includegraphics[width=0.2\textwidth]{./batchVsbruteforce}
+\includegraphics[width=0.2\textwidth]{./batchVSerror}\\
+}}
 
 \vspace{0.8cm}
 %Literature
