@@ -47,8 +47,8 @@
 \begin{minipage}{0.4\textwidth}
 \begin{flushleft} \large
 \textbf{\emph{Authors:}\\
-Anil \textsc{Pala} \& Franziska \textsc{Adler}}\\
-pala@campus.tu-berlin.de \hspace{0.5cm} adler.franziska@gmx.de
+Ahmet Anil \textsc{Pala} \& Franziska \textsc{Adler}}\\
+%anil@pala.com \hspace{0.5cm} adler.franziska@gmx.de
 \end{flushleft}
 \end{minipage}
 \hfill
@@ -89,22 +89,56 @@ Scalable Data Analytics and Data Mining}
     \end{multicols}}}
 
 \vspace{0.8cm}
+%create 5. Box: BATCH----------------------------------------------------------------------------------------
+\fcolorbox{darkgreen}{white}{\parbox{0.24 \textwidth}{%
+\textbf{Batch}\\
+
+For Offline learing the model was built within the first three days out of 600 data points. The following four days with 1248 data points created the first test set for this model. A second and a third test set where created after the previous testphase and contained 1102 and 1172 data points, respectivly RSS feeds.\\
+
+      \includegraphics[width=0.24\textwidth]{./time_models/OfflineModel.png}\\
+}}
+\hspace{0.8cm}
+%create 6. Box: Bruteforce and Errortriggered ----------------------------------------------------------------
+\fcolorbox{darkgreen}{white}{\parbox{0.4775 \textwidth}{%
+    \begin{multicols}{2}    
+\textbf{Bruteforce and Error-triggered}\\
+
+The window size for the bruteforce model contains 600 data points. After 400 test points we led it retrain with the last 600 data points. We then waited for 1000 data points and second retrain phase followed which was tested also with 1000 new data points.\\
+
+   \includegraphics[width=0.2\textwidth]{./time_models/BruteforceModel}\\
+The window size of the error-triggered model is constructed like the bruteforce update out of 600 datapoints. Due to our observations an diserable accurency threshold of 63\% seamed reasonable. A sanity window of testpoints ensures that at least 300 new data points arrive and based on their performance the model is rebuild or not.\\
 
 
+   \includegraphics[width=0.2\textwidth]{./time_models/Errortriggered}
+\end{multicols}}}
+
+
+\hspace{0.8cm}
+\fcolorbox{darkgreen}{white}{\parbox{0.18 \textwidth}{%
+   \begin{multicols}{1}
+\textbf{Incremental updates}
+
+
+The initial traing size of 600 is used for this model update method. For the incremental model, The initial traing size of 600 is used for this model update method. Dampening factor is simply  the value of the learning rate function subtracted by 1. Dampening factor is simply  the value of the learning rate function subtracted by 1.  As for the learning rate function, we used abs(arctan(x)/(pi/2)) This is because we want learning rate values between 1 and 0 which converges to 0 as the error gets smaller and converges to 1 as the error gets infinitely high.
+ \end{multicols}
+ 
+}}
 
 %create 7. Box: Results --------------------------------------------------------------------------------------
 \fcolorbox{darkgreen}{white}{\parbox{\textwidth}{%
-    \begin{multicols}{4} 
- \input{ContentFiles/results}
- \includegraphics[width=0.2\textwidth]{./plots/batchPlot.png} 
+The offline versions result with 1000 test points per intervall is always around 60\% even though it decreased at the last testing phase. 
+The offline versions result with 1000 test points per intervall is always around 60\% even though it decreased at the last testing phase. The offline versions result with 1000 test points per intervall is always around 60\% even though it decreased at the last testing phase. The offline versions result with 1000 test points per intervall is always around 60\% even though it decreased at the last testing phase. The offline versions result with 1000 test points per intervall is always around 60\% even though it decreased at the last testing phase. The offline versions result with 1000 test points per intervall is always around 60\% even though it decreased at the last testing phase. 
+   \includegraphics[width=0.2\textwidth]{./plots/batchPlot.png}\\
 
+The bruteforce model which updates after 
+   \includegraphics[width=0.2\textwidth]{./plots/bruteforcePlot.png}
    \includegraphics[width=0.2\textwidth]{./plots/bruteforce2_Plot.png}
    \includegraphics[width=0.2\textwidth]{./plots/errorTriggeredPlot}
    \includegraphics[width=0.2\textwidth]{./plots/bruteforce_batch}
 \includegraphics[width=0.2\textwidth]{./plots/errortriggered_batch}
    \includegraphics[width=0.2\textwidth]{./plots/allAccuracies}
 \\
-\end{multicols}}}
+}}
 
 \vspace{0.8cm}
 %Literature

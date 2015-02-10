@@ -3,3 +3,6 @@
 
 .idea
 .log
+.aux
+.log
+.pdf
