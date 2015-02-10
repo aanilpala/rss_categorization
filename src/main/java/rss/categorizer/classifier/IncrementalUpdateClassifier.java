@@ -167,26 +167,36 @@ public class IncrementalUpdateClassifier {
 			int local_count = 0;
 			double last_accuracy = Double.NaN;
 			
+			List<Double> local_learning_rate = new ArrayList<Double>();
+			
+			local_learning_rate.add(Math.abs(Math.atan(learning_rate_index) / (Math.PI/2)));
+			
 			
 			while(tuple_ptr < tuple_count) {
 				
 				//System.out.print("Incremental Update");
 				
 				if(!just_trained && (tuple_ptr % incremental_update_freq) == 0) {
-									
+					
+					
+					
 					double current_accuracy = local_correct_count / (double) local_count * 100;
 					
-					System.out.println("accuracy: " + local_correct_count / (double) local_count * 100 + " learning rate: " + Math.abs(Math.atan(learning_rate_index) / (Math.PI/2)));
+					//System.out.println("accuracy: " + local_correct_count / (double) local_count * 100 + ", learning rate index: " + learning_rate_index + " " + ", learning rate: " + Math.abs(Math.atan(learning_rate_index) / (Math.PI/2)));
 
 					local_correct_count = 0;
 					local_count = 0;
 					
-//					if(last_accuracy != Double.NaN) {
-//						if(current_accuracy > last_accuracy) decrease_learning_rate();
-//						else increase_learning_rate();
-//					}
-//					
-//					last_accuracy = current_accuracy;
+					
+					if(last_accuracy != Double.NaN) {
+						if(current_accuracy < 60) learning_rate_index = Math.tan(Math.PI/32); //decrease_learning_rate();
+						else decrease_learning_rate();
+					}
+					
+					local_learning_rate.add(Math.abs(Math.atan(learning_rate_index) / (Math.PI/2)));
+
+					
+					last_accuracy = current_accuracy;
 					
 					
 					old_tuples = training_tuples.map(new Function<Tuple3<Double,String,String>, Tuple3<Double,String,String>>() {
@@ -302,11 +312,11 @@ public class IncrementalUpdateClassifier {
 					
 					if(prediction == label_rep) {
 						local_correct_count++;
-						decrease_learning_rate();
+						//decrease_learning_rate();
 						predictions.add(new Tuple3<Long, Integer, Boolean>(t._1(), tuple_ptr, true));
 					}
 					else {
-						increase_learning_rate();
+						//increase_learning_rate();
 						predictions.add(new Tuple3<Long, Integer, Boolean>(t._1(), tuple_ptr, false));
 					}
 					
@@ -335,12 +345,17 @@ public class IncrementalUpdateClassifier {
 				e.printStackTrace();
 			}
 			
+			int ctr2 = 0, ctr3 = 0;
 			for(Tuple3<Long, Integer, Boolean> pred : predictions) {
 				if(pred._3()) total_correct_count++;
 				total_count++;
 				
 				//System.out.println(pred._1() + " " + pred._2() + " " + (total_correct_count/(double) total_count) * 100);
-				ps.println(pred._1() + " " + pred._2() + " " + (total_correct_count/(double) total_count) * 100);
+				
+				
+				
+				ps.println(pred._1() + "	" + pred._2() + "	" + (total_correct_count/(double) total_count) * 100 + "	" + local_learning_rate.get((int) Math.floor(ctr2 / (double) incremental_update_freq)));
+				ctr2++;
 				
 			}
 			
@@ -353,14 +368,14 @@ public class IncrementalUpdateClassifier {
 	    }
 
 		private static void increase_learning_rate() {
-			if(learning_rate_index > 0.0) learning_rate_index += (0.15 / incremental_update_freq);
-			else learning_rate_index -= (0.15 / incremental_update_freq);
+			if(learning_rate_index > 0.0) learning_rate_index += (0.5);
+			else learning_rate_index -= (0.5);
 			
 		}
 
 		private static void decrease_learning_rate() {
-			if(learning_rate_index > 0.0) learning_rate_index -= (0.1 / incremental_update_freq);
-			else learning_rate_index += (0.1 / incremental_update_freq);
+			if(learning_rate_index > 0.0) learning_rate_index -= (0.01);
+			else learning_rate_index += (0.01);
 		}
 	    
 	    
