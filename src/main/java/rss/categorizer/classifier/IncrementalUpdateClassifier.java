@@ -1,5 +1,8 @@
 package rss.categorizer.classifier;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -19,12 +22,14 @@ import org.apache.spark.mllib.regression.LabeledPoint;
 
 import rss.categorizer.stream.Label;
 import rss.categorizer.util.Stopwords;
+import scala.Tuple2;
 import scala.Tuple3;
 
 public class IncrementalUpdateClassifier {
 
-	private static Integer update_freq = 1000;
-	private static Integer window_size = 750;
+	private static Integer incremental_update_freq = 50;
+	private static Integer initial_training = 500;
+	private static Double learning_rate_index = Math.tan(Math.PI/32);
 		
 	    public static void main(String[] args) {
 			
@@ -93,33 +98,128 @@ public class IncrementalUpdateClassifier {
 						}
 				});
 			
+			List<Tuple3<Long, String, String>> data_tuples_at_the_driver = data_tuples.collect();
+			List<Tuple3<Long, Integer, Boolean>> predictions = new ArrayList<Tuple3<Long, Integer, Boolean>>();
 			
-			Integer tuple_ptr = 0;
-			List<Tuple3<Long, String, String>> data_tuples_at_driver = data_tuples.collect();
-			Integer tuple_count = data_tuples_at_driver.size();
-			List<Tuple3<Long, String, String>> window = new ArrayList<Tuple3<Long,String,String>>();
-			Integer update_count = 0;
-			NaiveBayesModel nbm;
+			Integer tuple_count = data_tuples_at_the_driver.size();
 			
-			int correct_count = 0;
-			int count = 0;
+			Integer tuple_ptr = initial_training;
 			
-			// training - initial model building
-			for(; tuple_ptr < window_size; tuple_ptr++) {
-				window.add(data_tuples_at_driver.get(tuple_ptr));
-			}
-			//List<Tuple3<Long, String, String>> training_set_at_driver = window.subList(tuple_ptr - window_size, tuple_ptr);
-			JavaRDD<Tuple3<Long, String, String>> old_training_set;
-			JavaRDD<Tuple3<Long, String, String>> training_set = sc.parallelize(window.subList(tuple_ptr - window_size, tuple_ptr));
-			System.out.println("Training");
-			// setup nbm
-			// timestamp, labeledpoint, label_representation
-			
-			JavaRDD<LabeledPoint> training_labeled_points = training_set.map(new Function<Tuple3<Long,String,String>, Tuple3<Long, LabeledPoint, Double>> () {
+			JavaRDD<Tuple3<Double, String, String>> old_tuples;
+			JavaRDD<Tuple3<Double, String, String>> training_tuples = sc.parallelize(data_tuples_at_the_driver.subList(0,  initial_training)).map(new Function<Tuple3<Long,String,String>, Tuple3<Double,String,String>>() {
 
-				    	@Override
-				    	public Tuple3<Long, LabeledPoint, Double> call(
-				    			Tuple3<Long, String, String> t) throws Exception {
+				@Override
+				public Tuple3<Double, String, String> call(
+						Tuple3<Long, String, String> v1) throws Exception {
+					return new Tuple3<Double, String, String>(1.0, v1._2(), v1._3());
+				}
+			});
+			
+			JavaRDD<LabeledPoint> training_lps = training_tuples.map(new Function<Tuple3<Double,String,String>, LabeledPoint>() {
+				
+				@Override
+		    	public LabeledPoint call(
+		    			Tuple3<Double, String, String> t) throws Exception {
+		    		
+		    		Double label_rep = Label.labels[Label.label_map.get(t._3())];
+		    		String[] terms = t._2().replaceAll("[^0-9A-Za-z]", " ").split("\\s+", -1);
+		    		
+		    		HashMap<Integer, Double> map = new HashMap<Integer, Double>();
+		    		
+		    		HashMap<String, Integer> dict = broadcast_dict.value();
+		    		
+		    		for(String term : terms) {
+		    			
+		    			if(term.isEmpty()) continue;
+		    			if(stop_words.value().is(term)) continue;
+		    			
+		    			Double value = map.get(dict.get(term));
+		    			if(value == null) map.put(dict.get(term), t._1());
+		    			else map.put(dict.get(term), value +  t._1());
+		    		
+		    		}
+		    		
+		    		int[] indice_array = new int[map.size()];
+		    		double[] value_array = new double[map.size()];
+		    		
+		    		int ctr = 0;
+		    		for(Integer index : map.keySet()) {
+		    			indice_array[ctr] = index;
+		    			value_array[ctr++] = map.get(index);
+		    		}
+		    		
+		    		Arrays.sort(indice_array);
+		    		Arrays.sort(value_array);
+		    		
+		    		LabeledPoint lp = new LabeledPoint(label_rep, new SparseVector(dict.size(), indice_array, value_array));
+		    		
+		    		return lp;
+		    	}
+			});
+			
+			NaiveBayesModel nbm;
+			nbm = NaiveBayes.train(training_lps.rdd());
+			
+			
+			boolean just_trained = true;
+			
+			int local_correct_count = 0;
+			int local_count = 0;
+			double last_accuracy = Double.NaN;
+			
+			
+			while(tuple_ptr < tuple_count) {
+				
+				//System.out.print("Incremental Update");
+				
+				if(!just_trained && (tuple_ptr % incremental_update_freq) == 0) {
+									
+					double current_accuracy = local_correct_count / (double) local_count * 100;
+					
+					System.out.println("accuracy: " + local_correct_count / (double) local_count * 100 + " learning rate: " + Math.abs(Math.atan(learning_rate_index) / (Math.PI/2)));
+
+					local_correct_count = 0;
+					local_count = 0;
+					
+//					if(last_accuracy != Double.NaN) {
+//						if(current_accuracy > last_accuracy) decrease_learning_rate();
+//						else increase_learning_rate();
+//					}
+//					
+//					last_accuracy = current_accuracy;
+					
+					
+					old_tuples = training_tuples.map(new Function<Tuple3<Double,String,String>, Tuple3<Double,String,String>>() {
+
+						@Override
+						public Tuple3<Double, String, String> call(
+								Tuple3<Double, String, String> v1)
+								throws Exception {
+							return new Tuple3<Double, String, String> (v1._1()*(1.0 - get_learning_rate()), v1._2(), v1._3());
+						}
+
+						private double get_learning_rate() {
+							
+							return Math.abs(Math.atan(learning_rate_index) / (Math.PI/2));
+						}
+					});
+					
+					training_tuples = sc.parallelize(data_tuples_at_the_driver.subList(tuple_ptr - incremental_update_freq, tuple_ptr)).map(new Function<Tuple3<Long,String,String>, Tuple3<Double,String,String>>() {
+
+						@Override
+						public Tuple3<Double, String, String> call(
+								Tuple3<Long, String, String> v1) throws Exception {
+							return new Tuple3<Double, String, String>(1.0, v1._2(), v1._3());
+						}
+					});
+					
+					training_tuples = old_tuples.union(training_tuples);
+					
+					training_lps = training_tuples.map(new Function<Tuple3<Double,String,String>, LabeledPoint>() {
+						
+						@Override
+				    	public LabeledPoint call(
+				    			Tuple3<Double, String, String> t) throws Exception {
 				    		
 				    		Double label_rep = Label.labels[Label.label_map.get(t._3())];
 				    		String[] terms = t._2().replaceAll("[^0-9A-Za-z]", " ").split("\\s+", -1);
@@ -134,8 +234,8 @@ public class IncrementalUpdateClassifier {
 				    			if(stop_words.value().is(term)) continue;
 				    			
 				    			Double value = map.get(dict.get(term));
-				    			if(value == null) map.put(dict.get(term), 1.0);
-				    			else map.put(dict.get(term), value + 1.0);
+				    			if(value == null) map.put(dict.get(term), t._1());
+				    			else map.put(dict.get(term), value +  t._1());
 				    		
 				    		}
 				    		
@@ -153,88 +253,18 @@ public class IncrementalUpdateClassifier {
 				    		
 				    		LabeledPoint lp = new LabeledPoint(label_rep, new SparseVector(dict.size(), indice_array, value_array));
 				    		
-				    		return new Tuple3<Long, LabeledPoint, Double>(t._1(), lp, label_rep);
+				    		return lp;
 				    	}
-				    	}).map(new Function<Tuple3<Long,LabeledPoint,Double>, LabeledPoint>() {
-						@Override
-						public LabeledPoint call(Tuple3<Long, LabeledPoint, Double> t)
-								throws Exception {
-							return t._2();
-						}
-				    	});
-			nbm = NaiveBayes.train(training_labeled_points.rdd());
-					
-			
-			update_count++;
-			
-			while(tuple_ptr < tuple_count) {
+					});
 				
-				if((tuple_ptr / (double) update_freq) > update_count) {
+					nbm = NaiveBayes.train(training_lps.rdd());
 					
-					old_training_set = training_set;
+					just_trained = true;
 					
-					training_set = sc.parallelize(window.subList(tuple_ptr - window_size, tuple_ptr));
-					
-					training_set = training_set.union(old_training_set);
-					
-					System.out.println("ReTraining");
-					// setup nbm
-					// timestamp, labeledpoint, label_representation
-					training_labeled_points = training_set.map(new Function<Tuple3<Long,String,String>, Tuple3<Long, LabeledPoint, Double>> () {
-
-						    	@Override
-						    	public Tuple3<Long, LabeledPoint, Double> call(
-						    			Tuple3<Long, String, String> t) throws Exception {
-						    		
-						    		Double label_rep = Label.labels[Label.label_map.get(t._3())];
-						    		String[] terms = t._2().replaceAll("[^0-9A-Za-z]", " ").split("\\s+", -1);
-						    		
-						    		HashMap<Integer, Double> map = new HashMap<Integer, Double>();
-						    		
-						    		HashMap<String, Integer> dict = broadcast_dict.value();
-						    		
-						    		for(String term : terms) {
-						    			
-						    			if(term.isEmpty()) continue;
-						    			if(stop_words.value().is(term)) continue;
-						    			
-						    			Double value = map.get(dict.get(term));
-						    			if(value == null) map.put(dict.get(term), 1.0);
-						    			else map.put(dict.get(term), value + 1.0);
-						    		
-						    		}
-						    		
-						    		int[] indice_array = new int[map.size()];
-						    		double[] value_array = new double[map.size()];
-						    		
-						    		int ctr = 0;
-						    		for(Integer index : map.keySet()) {
-						    			indice_array[ctr] = index;
-						    			value_array[ctr++] = map.get(index);
-						    		}
-						    		
-						    		Arrays.sort(indice_array);
-						    		Arrays.sort(value_array);
-						    		
-						    		LabeledPoint lp = new LabeledPoint(label_rep, new SparseVector(dict.size(), indice_array, value_array));
-						    		
-						    		return new Tuple3<Long, LabeledPoint, Double>(t._1(), lp, label_rep);
-						    	}
-						    	}).map(new Function<Tuple3<Long,LabeledPoint,Double>, LabeledPoint>() {
-								@Override
-								public LabeledPoint call(Tuple3<Long, LabeledPoint, Double> t)
-										throws Exception {
-									return t._2();
-								}
-						    	});
-					nbm = NaiveBayes.train(training_labeled_points.rdd());
-					
-					update_count++;
 				}
 				else {
 					//System.out.println("Predicting");
-					Tuple3<Long, String, String> t = data_tuples_at_driver.get(tuple_ptr++);
-					window.add(t);
+					Tuple3<Long, String, String> t = data_tuples_at_the_driver.get(tuple_ptr);
 					
 					Double label_rep = Label.labels[Label.label_map.get(t._3())];
 		    		String[] terms = t._2().replaceAll("[^0-9A-Za-z]", " ").split("\\s+", -1);
@@ -271,18 +301,69 @@ public class IncrementalUpdateClassifier {
 					double prediction = nbm.predict(features);
 					
 					if(prediction == label_rep) {
-						correct_count++;
+						local_correct_count++;
+						decrease_learning_rate();
+						predictions.add(new Tuple3<Long, Integer, Boolean>(t._1(), tuple_ptr, true));
 					}
-					count++;
+					else {
+						increase_learning_rate();
+						predictions.add(new Tuple3<Long, Integer, Boolean>(t._1(), tuple_ptr, false));
+					}
+					
+					tuple_ptr++;
+					
+					local_count++;
+					
+					just_trained = false;
+
 				}		
 				
 			}
 			
 			
-			System.out.println("accuracy: " + correct_count / (double) count * 100);
+			
+			Double cumulative_accuraccy = 0.0;
+			
+			int total_correct_count = 0;
+			int total_count = 0;
+			
+			PrintStream ps = null;
+			try {
+				ps = new PrintStream(new File("./cumulative_error_incremental.txt"));
+			} catch (FileNotFoundException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
+			for(Tuple3<Long, Integer, Boolean> pred : predictions) {
+				if(pred._3()) total_correct_count++;
+				total_count++;
+				
+				//System.out.println(pred._1() + " " + pred._2() + " " + (total_correct_count/(double) total_count) * 100);
+				ps.println(pred._1() + " " + pred._2() + " " + (total_correct_count/(double) total_count) * 100);
+				
+			}
+			
+			
+			//System.out.println("total average accuracy: " + total_correct_count / (double) total_count * 100);
+			
 
 					
 					
 	    }
+
+		private static void increase_learning_rate() {
+			if(learning_rate_index > 0.0) learning_rate_index += (0.15 / incremental_update_freq);
+			else learning_rate_index -= (0.15 / incremental_update_freq);
+			
+		}
+
+		private static void decrease_learning_rate() {
+			if(learning_rate_index > 0.0) learning_rate_index -= (0.1 / incremental_update_freq);
+			else learning_rate_index += (0.1 / incremental_update_freq);
+		}
+	    
+	    
+		
 	}
 
