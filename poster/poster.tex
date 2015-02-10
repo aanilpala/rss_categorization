@@ -95,7 +95,7 @@ Scalable Data Analytics and Data Mining}
 
 For Offline learing the model was built within the first three days out of 600 data points. The following four days with 1248 data points created the first test set for this model. A second and a third test set where created after the previous testphase and contained 1102 and 1172 data points, respectivly RSS feeds.\\
 
-      \includegraphics[width=0.24\textwidth]{./OfflineModel.png}\\
+      \includegraphics[width=0.24\textwidth]{./time_models/OfflineModel.png}\\
 }}
 \hspace{0.8cm}
 %create 6. Box: Bruteforce and Errortriggered ----------------------------------------------------------------
@@ -105,10 +105,10 @@ For Offline learing the model was built within the first three days out of 600 d
 
 The window size for the bruteforce model contains 600 data points. After 400 test points we led it retrain with the last 600 data points. We then waited for 1000 data points and second retrain phase followed which was tested also with 1000 new data points.\\
 
-   \includegraphics[width=0.2\textwidth]{./BruteforceModel}\\
+   \includegraphics[width=0.2\textwidth]{./time_models/BruteforceModel}\\
 The window size of the error-triggered model is constructed like the bruteforce update out of 600 datapoints. Due to our observations an diserable accurency threshold of 63\% seamed reasonable. A sanity window of testpoints ensures that at least 300 new data points arrive and based on their performance the model is rebuild or not.\\
 
-   \includegraphics[width=0.2\textwidth]{./Errortriggered}
+   \includegraphics[width=0.2\textwidth]{./time_models/Errortriggered}
 \end{multicols}}}
 \hspace{0.8cm}
 \fcolorbox{darkgreen}{white}{\parbox{0.18 \textwidth}{%
@@ -122,13 +122,16 @@ The window size of the error-triggered model is constructed like the bruteforce 
 \fcolorbox{darkgreen}{white}{\parbox{\textwidth}{%
 The offline versions result with 1000 test points per intervall is always around 60\% even though it decreased at the last testing phase. 
 The offline versions result with 1000 test points per intervall is always around 60\% even though it decreased at the last testing phase. The offline versions result with 1000 test points per intervall is always around 60\% even though it decreased at the last testing phase. The offline versions result with 1000 test points per intervall is always around 60\% even though it decreased at the last testing phase. The offline versions result with 1000 test points per intervall is always around 60\% even though it decreased at the last testing phase. The offline versions result with 1000 test points per intervall is always around 60\% even though it decreased at the last testing phase. 
-   \includegraphics[width=0.2\textwidth]{./batchPlot.png}\\
+   \includegraphics[width=0.2\textwidth]{./plots/batchPlot.png}\\
 
 The bruteforce model which updates after 
-   \includegraphics[width=0.2\textwidth]{./bruteforcePlot.png}
-   \includegraphics[width=0.2\textwidth]{./errortriggeredPlot}
-   \includegraphics[width=0.2\textwidth]{./batchVsbruteforce}
-\includegraphics[width=0.2\textwidth]{./batchVSerror}\\
+   \includegraphics[width=0.2\textwidth]{./plots/bruteforcePlot.png}
+   \includegraphics[width=0.2\textwidth]{./plots/bruteforce2_Plot.png}
+   \includegraphics[width=0.2\textwidth]{./plots/errorTriggeredPlot}
+   \includegraphics[width=0.2\textwidth]{./plots/bruteforce_batch}
+\includegraphics[width=0.2\textwidth]{./plots/errortriggered_batch}
+   \includegraphics[width=0.2\textwidth]{./plots/allAccuracies}
+\\
 }}
 
 \vspace{0.8cm}
