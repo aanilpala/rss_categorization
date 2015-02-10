@@ -8,4 +8,4 @@ the model is rebuilt.\\
 \textbf{\large Threshold-triggered}\\
 As a variation of the bruteforce model-update the threshold triggered one will rebuild the model on a sliding window as soon as the performance of our model is beneth a certain threshold. \\
 \textbf{\large Incremental}\\
-The incremental model updates the models properties with new arriving data points. \color{red}TODO TODO TODO TODOTODO TODOTODO TODOTODO TODOTODO TODOTODO TODOTODO TODOTODO TODOTODO TODOTODO TODOTODO TODOTODO TODO
+In the incremental model, unlike the other update models, following an initial training-only phase, all the incoming stream items are always used for training right after the prediction. So, this way the immidiate information whether the prediction was good or bad can be used for improving the model on the fly. In other words, predictive model building and testing phases perfectly overlap in incremental model update method. Updating the model is done by 'dampening' the feature vectors of the past elements. We used incremental model to achieve a real-time response to the changes in the data arguably making the text mining application more resillant to the conceptual drifts.
