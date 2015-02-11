@@ -1,0 +1,103 @@
+% Course: AIM3
+% Autors: Anil Pala, Franziska Adler
+% Datum: 03.02.2015
+
+\documentclass[a0,portrait]{a0poster}
+
+\usepackage{anyfontsize}%for changing fontsize
+\usepackage[ansinew]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[english,ngerman]{babel}
+\usepackage{amsmath} 
+\usepackage{fancybox}
+\usepackage{graphicx}
+\unitlength1cm %picture environment 1 cm
+
+%colums and boxes
+\usepackage{multicol}
+\setlength{\fboxrule}{1.5mm} %lines
+\setlength{\fboxsep}{10mm} %margin text relation
+\setlength{\columnsep}{15mm}     %colum space
+\setlength{\columnseprule}{4pt}  % lines between columns
+
+%page settings
+\renewcommand\baselinestretch{1.2}
+\parskip=0.5\baselineskip
+\topmargin-30pt
+\marginparwidth0mm
+\oddsidemargin-20pt
+\evensidemargin-20pt
+\textwidth770mm
+\textheight1140mm
+
+% color
+\usepackage{xcolor}
+\usepackage{color} 
+\definecolor{darkgreen}{rgb}{0,0.4,0.2} 
+\definecolor{darkblue}{rgb}{0,0,0.5}
+\definecolor{darkred}{rgb}{0.6,0,0.05}
+
+\begin{document}
+\pagecolor[rgb]{0.9,0.925,0.9}
+% header
+ \begin{center}
+    {\huge \textbf{\\A Comparison of Online learning Na\"ive Bayes Classifier\\ on RSS Feeds using SPARK\\}}
+ %   \vspace*{0.018\textheight}
+  \end{center}
+\begin{minipage}{0.4\textwidth}
+\begin{flushleft} \large
+\textbf{\emph{Authors:}\\
+Ahmet Anil \textsc{Pala} \& Franziska \textsc{Adler}}\\
+%anil@pala.com \hspace{0.5cm} adler.franziska@gmx.de
+\end{flushleft}
+\end{minipage}
+\hfill
+\begin{minipage}{0.4\textwidth}
+\begin{flushright} \large
+\textbf{\textsc{\color{darkred} \Large TU Berlin}\\
+Advanced Information Management III\\
+Scalable Data Analytics and Data Mining}
+\end{flushright}
+\end{minipage}
+\newcommand{\HRule}{\rule[-10mm]{805mm}{1mm}} \HRule \\[0.5cm] %line
+
+%create first Box
+\fcolorbox{darkgreen}{white}{\parbox{\textwidth}{%
+
+    \begin{multicols}{2}      
+      \input{ContentFiles/motivation}
+    \end{multicols}}}
+
+\vspace{0.8cm}
+%create second Box
+\fcolorbox{darkgreen}{white}{\parbox{0.4775 \textwidth}{%
+      \input{ContentFiles/dataAndSetup}
+}}
+\hspace{0.8cm}
+%create 3. Box
+\fcolorbox{darkgreen}{white}{\parbox{0.4775 \textwidth}{%
+      \input{ContentFiles/streaming}}}
+\hspace{0.8cm}
+
+
+\vspace{0.8cm}
+%create 4. Box
+\fcolorbox{darkgreen}{white}{\parbox{\textwidth}{%
+
+    \begin{multicols}{4}      
+      \input{ContentFiles/methology} %changed to Methodology
+    \end{multicols}}}
+\vspace{0.8cm}
+
+%create 7. Box: Results --------------------------------------------------------------------------------------
+\fcolorbox{darkgreen}{white}{\parbox{\textwidth}{%
+    \begin{multicols}{4} 
+ \input{ContentFiles/results}
+\end{multicols}}}
+
+\vspace{0.8cm}
+%Literature
+\fcolorbox{darkgreen}{white}{\parbox{ \textwidth}{%
+      \input{ContentFiles/references}
+}}
+\end{document}
