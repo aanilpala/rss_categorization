@@ -3,6 +3,9 @@
 \usepackage[final]{pdfpages}
 \usepackage{svg}
 \usepackage{cite} 
+\usepackage{listings}
+\usepackage{color}
+\usepackage[usenames,dvipsnames,svgnames,table]{xcolor}
 \usepackage[german,english]{babel}
 \usepackage[round]{natbib}
 \setlength{\parindent}{0pt}
@@ -75,11 +78,30 @@ texttexttext
 %write here
 Data we are using is basically RSS(Really simple syndication) items streamed from BBC. An RSS Item is simply some tags describing the content of the feed item and some meta-data about it such as publication date, url, etc. in XML structure. An example RSS item is given below.
 
-...
+\lstset{
+    language=xml,
+    tabsize=3,
+    %frame=lines,
+    caption=An Example RSS Item,
+    label=code:sample,
+    frame=shadowbox,
+    rulesepcolor=\color{gray},
+    xleftmargin=20pt,
+    framexleftmargin=15pt,
+    keywordstyle=\color{blue}\bf,
+    commentstyle=\color{OliveGreen},
+    stringstyle=\color{black},
+    numbers=none,
+    numberstyle=\tiny,
+    numbersep=5pt,
+    breaklines=true,
+    showstringspaces=false,
+    basicstyle=\footnotesize,
+    emph={food,name,price},emphstyle={\color{magenta}}}
+    \lstinputlisting{sample_feeditem.xml}
 
 
-One difficulty of working with stream is that data being essentially volatile hence it inheritedly requires real-time data processing. In other words,  data should be handled as soon as it arrives. Since data scarcity would pose a serious problem for a text classifier we want to build and due to the little timeframe allocated for the project, there was no stream data to throw away. 
-
+One difficulty of working with stream is the volatility of the data hence it inheritedly requires real-time data processing. In other words,  data should be handled as soon as it arrives. Since it is only possible to process data after implementing the text classifier and get it running, there was no straightforward way of utilising the data streamed during the development of the project. As Data scarcity evidently would pose a serious problem for a text classifier especially considering that we aim to detect concept drifts, we were compelled to find a way to facilitate the data being streamed while developing the application. To this end, we decided to first archive the stream data, then broadcast/stream this data through one of the local ports on the development environment and finally let the streaming application consume this archived data broadcasted data once the development is complete. This way, we could take the time needed for the development and meanwhile did not lose any data since the very first day we conceived the idea of mining news feeds items for this project.
 \subsection{Software}
 %write here
 For realising the stated approaches we are using Apache Spark and MLlib. Apache Spark is a open source processing engine for parallel processing of large scale data. Spark works on top of a distributed storage and uses a cluster manager cluster manager like Yarn or Mesos. For the purpose of this project the locale storage was used as simulated distributed storage which is integrated in spark for developing and testing reasons.  \\
