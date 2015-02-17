@@ -8,6 +8,17 @@
 \usepackage[round]{natbib}
 \setlength{\parindent}{0pt}
 \usepackage[onehalfspacing]{setspace} 
+
+\makeatletter
+\renewcommand\paragraph{\@startsection{paragraph}{4}{\z@}%
+            {-2.5ex\@plus -1ex \@minus -.25ex}%
+            {1.25ex \@plus .25ex}%
+            {\normalfont\normalsize\bfseries}}
+\makeatother
+\setcounter{secnumdepth}{4} % how many sectioning levels to assign numbers to
+\setcounter{tocdepth}{4}    % how many sectioning levels to show in ToC
+
+
 \begin{document}
 \bibliographystyle{unsrtnat}
 \input{./title.tex}
@@ -15,17 +26,14 @@
 \tableofcontents
 
 \newpage
-
-
-
 \section{Theory}
 \subsection{Motivation}
 %write here
 %example citation: texttexttext\citep[p. 4]{mueller2000}
 \begin{spacing}{1.2}
-In Text Classification Na\"ive Bayes Classifiers are popular due to their simplicity and find application in the field of spam email detection and discovery of specified web content \citep[p. 225]{ertel2008}. Classifier aim the prediction of a category like spam or ham on the basis of previous examples. This can be easily realised with a probabilistic classifier like Na\"ive Bayes assuming that the data distribution is static over time, all data is always accessible and query time does not play a major role. For adapting real world problems and their dynamics this might not be sufficient. The development of the internet and the need of processing huge amounts of available data and answering queries in time-critical situations needs to be taken in account for handling model construction and model updating. The reason why model updates are necessary is the prevalence of shifts in the statistical distribution of the target classes in online-learning scenario. This is called $concept$ $drift$. Also aspects of scalability might be considered since Concept Drift occurs mainly in situations of large data quantities arriving via stream \citep[p. 4]{tsymbal2004}   
+In Text Classification Na\"ive Bayes Classifiers are popular due to their simplicity and find application in the field of spam email detection and discovery of specified web content \citep[p. 225]{ertel2008}. Classifier aim the prediction of a category like spam or ham on the basis of previous examples. This can be easily realised with a probabilistic classifier like Na\"ive Bayes assuming that the data distribution is static over time, all data is always accessible and query time does not play a major role. For adapting real world problems and their dynamics this might not be sufficient. For applications requiring immidiate processing of fresh data and answering queries in real-time, instead of traditional learning approaches, more real-time-tailored and more learning techniques involving sophisticated model updates have to be devised. The reason why model updates are necessary is the prevalence of shifts in the statistical distribution of the target classes in online-learning scenarios. This is called $concept$ $drift$. Also aspects of scalability should be considered since concept drifts are common in situations of large data quantities arriving via streams with high data rates \citep[p. 4]{tsymbal2004}   
 
-In this project we use RSS feeds from BCC for classification on a distributed system. Focus is the evaluation of several Na\"ive Bayes classifiers which implement the online learning paradigm by using different model update techniques.  The evaluation concentrates on the handling of Concept Drift. First part of this report explores the theoretical foundations of the relevant concepts as well as the explanations of the challenges we face and the methodology we follow for implementation and the evaluation. The second part digs into more details of our implementation such as how the different classifier approaches are realised. Furthermore the evaluation of their performances are analysed and presented.
+In this project we use RSS feeds from BCC for classification on a distributed system. Focus is the evaluation of several Na\"ive Bayes classifiers which implement the online learning paradigm by using different model update techniques.  The evaluation concentrates on the handling of concept drifts. First part of this report explores the theoretical foundations of the relevant concepts as well as the explanations of the conceptual challenges we face and the methodology we follow for implementation and the evaluation. The second part digs in more details of our implementation such as how the different classifier approaches are realised. Furthermore the evaluation of their performances are analysed and presented.
 
 \end{spacing}
 
@@ -52,13 +60,13 @@ texttexttext
 
 \subsubsection{Concept Drift}
 %write here
-Any online learning scenario including ours, news feed mining, is susceptible of the phenomenon called $concept$ $drift$. Concept drift occurs when the statistical properties of the target variable to be predicted change over time. Concept drift can manifest itself in different ways as explained in \citep[p. 5]{KunchevaEnsembleOverview08} . Firstly, shifts in the prior class probabilities or class-conditional probabilities could be the indicator of a concept drift. Likewise, if the relevance between a certain set of attribute values, clues, and certain class predictions change, this could signal a concept drift. Moreover, abrupt increase in the model complexity can be a sign of the concept drift as well for the applicable predictive models. Finally and most importantly, prediction accuracy serves as the most widely-used criterion for detecting the presence of a concept drift. 
+Most online learning scenarios including ours, news feed mining, is susceptible to the phenomenon called $concept$ $drift$. Concept drift occurs when the statistical properties of the target variable to be predicted change over time. Concept drift can manifest itself in different ways as explained in \citep[p. 5]{KunchevaEnsembleOverview08} . Firstly, shifts in the prior class probabilities or class-conditional probabilities could be the indicator of a concept drift. Likewise, if the relevance between a certain set of attribute values, clues, and certain class predictions change, this could signal a concept drift. Moreover, abrupt increase in the model complexity can be a sign of the concept drift as well for the applicable predictive models. Finally and most importantly, prediction accuracy serves as the most widely-used criterion for detecting the presence of a concept drift. 
 
 The sources of the concept drifts are diverse depending on the application. For example, in spam filtering applications, user changing his/her mind about what is spam and what is not is an example of a concept drift. In our classification scenario, news feed items categorisation, concept drifts can directly stem from the shift in the media attention which is naturally drawn to the emerging real-life events and its implications on the set of vocabulary news writers use to explain emerging phenomena. For example, a new music album titled  "Anarchy in the UK"  is introduced and sold millions of copies in short time hence became the topic of many news articles. Since the terms in the title suggests that the chances are that this item could be linked to the category 'politics', most probably the naive bayesian classifier will capture the statistical correspondence of these words to its corresponding what-it-would-be-categorized-as-in-past category and lead to false predictions.
 
 Different ways of handling concept drifts are proposed in literature \citep[p. 5]{KunchevaEnsembleOverview08}. These different approaches can be classified according to 4 different criteria. First criterium is whether instance-based or batch-based processing of the stream items are employed. Since, instance-based processing is mostly too costly in terms of CPU load, batch-based processing where the continuous stream is discretised as batches are mostly used. Secondly, concept drift handling differs by the mechanism of the drift detection. There are two common kinds of concept drifts detection mechanism namely explicit detection and implicit-detection. Explicit-detection mechanism takes a detection action upon the detection such as retraining the model based on the recent items. On the other hand, implicit-detection only continuously adjusts the weights of different classification parameters as a function of concept drift indicators such as error rate, accuracy, etc. These parameters could be the weights of the members of the ensemble classifiers letting the models trained with the obsolete data fade. Moreover, another criterium for the above-mentioned classification is whether classifier-specific or classifier-free action mechanism is employed. In the former, the detection and action mechanism depends on the nature of the classifier and cannot be applied to the all kinds of classifiers. In the latter, the detection is bound to the accuracy and the action is updating the training data so it works with any classifier. Finally, concept drifts can be handled by a single classifier or an ensemble of them. When an ensemble is employed, the prediction decision is jointly taken by a dynamic combiner logic that forgets some of the classifiers which performs bad. Furthermore, although the drift detection action is usually implicit in the ensembles, every now and then ensemble can drop a member by running 'replace the loser' policy.
 
-For this project, we use three different stream learning approaches. They all do batch-based processing using a single classifier for explicit concept drift detection. In terms of classifier-dependency of the concept-drift handling methods, two of them implements classifier-free methods for detection and taking action agains the concept drift and one of them employs classifier-specific approach. Details regarding these different stream learning approaches we use are discussed in the Methods subsection.
+For this project, we use three different stream learning approaches. They all do batch-based processing using a single classifier for explicit concept drift detection. In terms of classifier-dependency of the concept-drift handling methods, two of them implement classifier-free methods for detection and taking action for the drifting concepts and one of them employs classifier-specific approach. Details regarding these different stream learning approaches we use are discussed in the Methods subsection.
 
 
 \subsubsection{Streaming}
@@ -70,9 +78,19 @@ In order to deal with the continuous nature of the data, traditional programming
 With the Internet data availability seems not to constitute a problem anymore. Aspects of storing, processing and mining those data amounts were reconsidered in the past years and led to the raise of new technologies and the mostly unloved buzzword Big Data. A single CPU can not accomplish the processing of those data quantities, especially if the algorithms are computationally intensive like most of the prediction algorithms from the field of Machine Learning which are widely used in data mining. To handle that  the parallel execution of calculations is spread over a cluster of machines with a underlying system responsible for scheduling, load balance and fault tolerance \citep[p. 10]{zaharia2010} . The forerunner of this cluster model was Hadoop, now several frameworks which extend this work are developed and allow wider functionality and significant performance improvements. Even though those frameworks are centered around data processing and ease of use software developers need to be aware of the distributed nature of such systems and parallel computation execution. This might be clear to those coming from a Distributed Systems background but challenging for data engineers or developers related to data mining who are more used to sequential arrangement of data processing.  
 
 \subsection{Methods}
-\subsubsection{Sliding Window}
+\subsubsection{Learning Methods}
 %write here
-texttexttext
+As mentioned previously in the report, the major aim of the project is to compare different model update techniques implemented as the variants of the same Naive Bayesian Classifier in terms of their capability in adapting/capturing concept drifts. For this purpose, we evaluate one offline (as a baseline) and three online classifiers.
+
+\paragraph{Offline Learning}
+%write here
+TODO: Franziska
+\paragraph{Online Learning}
+
+We consider three different online learning approaches two of which are slight variations of each other and both implement explicit-detection of concept drifts. As for, the third one, it is considerably different and it features implicit-detection methods for concept drifts. However, all three have a set of  features in common. To be more specific, they all are single-classifier approaches and all utilise a 'sliding window' of recent data points to be used for the potential updates of the predictive model. What first two approaches differ is the way predictive model updates are triggered. The first approach, called the bruteforce update, rebuilds the model at fixed interval by using the data items stored in the sliding window. The second variation called, error-triggered updates, waits for accuracy rate to go below a certain threshold which is hardcoded. Third model, called incremental updates, implements a different model update scheme than first two. Instead of rebuilding the model with recent data, it incorporate the recent data coming from the last window into the model. While doing so, it scales the feature vectors of the recent data by the learning rate and the past data by the value that learning rate subtracted by one. Learning rate simply specifies the amount of adaptation to the recent items to be done and the mount of 'forgetting' of the past models. Use of a dynamic learning rate elevated by increasing rates of error enables the incremental updates approach to 'silently' detect concept drifts and take the recent data into more consideration than the past by scaling down the feature vectors of the past models and taking the feature-vectors of the recent items almost as they are. One crucial point worth mentioning about incremental-updates model, it continues the training of the classifier with every incoming batch of data no matter what the learning rate is at the moment. This makes the training and test set simply perfectly overlap onto each other. In other words, every incoming item is used for updating the model after the prediction is done and the immediate feedback on the outcome of the prediction is received. 
+
+All these three models perfectly exhibit the textbook definition of online learning behaviour: alternating between exploitation and exploration although the lengths and the data sets used for their respective exploitation and exploration intervals differ substantially due to the their different underlying update mechanism which are explained above.
+
 
 \subsection{Evaluation Measurse}
 %write here
@@ -81,7 +99,7 @@ texttexttext
 \section{Empirics}
 \subsection{Data}
 %write here
-Data we are using is basically RSS(Really simple syndication) items streamed from BBC. An RSS Item is simply some tags describing the content of the feed item and some meta-data about it such as publication date, url, etc. in XML structure. An example RSS item is given below.
+Data we are using is basically RSS(Really simple syndication) items streamed from BBC. An RSS Item is combination of some tags describing the content of the feed item and some meta-data about it such as publication date, url, etc. in XML structure. An example RSS item is given below.
 
 \lstset{
     language=xml,
@@ -103,7 +121,9 @@ Data we are using is basically RSS(Really simple syndication) items streamed fro
     showstringspaces=false,
     basicstyle=\footnotesize,
     emph={food,name,price},emphstyle={\color{magenta}}}
-    \lstinputlisting{sample_feeditem.xml}
+    \lstinputlisting{sample_feeditem.xml}.
+
+Here, we are only interested in what is in the publication date, description and title tags. Publication date is crucial for computing interval-based prediction accuracy metrics and in-batch ordering. Description and title constitute the document we want to categorise in our case as we want to mine RSS feed items as opposed to mining the news articles themselves. Therefore, there is no need for fetching the actual article's text.
 
 
 One difficulty of working with data streams is the volatility of the data hence it inherently requires real-time data processing. In other words,  data should be handled as soon as it arrives. Since it is only possible to process data after implementing the text classifier and get it running, there was no straightforward way of utilising the data streamed during the development of the project. As Data scarcity evidently would pose a serious problem for a text classifier especially considering that we aim to detect concept drifts, we were compelled to find a way to facilitate the data being streamed while developing the application. To this end, we decided to first archive the stream data, then broadcast/stream this data through one of the local ports on the development environment and finally let the streaming application consume this archived data broadcasted data once the development is complete. This way, we could take the time needed for the development and meanwhile did not lose any data since the very first day we conceived the idea of mining news feeds items for this project.
