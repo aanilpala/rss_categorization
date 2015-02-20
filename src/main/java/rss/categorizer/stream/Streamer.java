@@ -9,12 +9,9 @@ import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.api.java.function.PairFlatMapFunction;
 import org.apache.spark.api.java.function.PairFunction;
-import org.apache.spark.api.java.function.VoidFunction;
 import org.apache.spark.broadcast.Broadcast;
-import org.apache.spark.mllib.classification.NaiveBayes;
 import org.apache.spark.mllib.linalg.SparseVector;
 import org.apache.spark.mllib.regression.LabeledPoint;
-import org.apache.spark.rdd.RDD;
 import org.apache.spark.streaming.Duration;
 import org.apache.spark.streaming.api.java.JavaDStream;
 import org.apache.spark.streaming.api.java.JavaPairDStream;
@@ -23,8 +20,6 @@ import org.apache.spark.streaming.api.java.JavaStreamingContext;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 
-import akka.util.HashCode;
-
 import com.google.common.base.Optional;
 
 import rss.categorizer.config.Time;
@@ -32,7 +27,6 @@ import rss.categorizer.model.*;
 import rss.categorizer.util.TFIDF;
 import scala.Tuple2;
 import scala.Tuple3;
-import scala.runtime.BoxedUnit;
 
 
 public class Streamer {
