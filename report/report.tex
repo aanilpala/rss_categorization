@@ -149,7 +149,7 @@ The starting point for the implementation was designing and implementing a 'hook
 
 In the figure, Spark Streaming discretises the incoming stream by breaking the data into batches to be processed in first in first out order. We simply run this flow which also does after doing in-batch ordering of items according to their timestamps to accumulate a txt file for the RSS archive to be stremed later. Additionally, this streaming also creates a dictionary, everytime it runs inserts new vocabulary into the dictionary along with their associated hashcode which serves as the unique identifiers for the terms. In the source code, implementation of the Initial Streaming tasks can be found in rss.categorizer.util package, RSS Fetcher.java and FeedRefiner in particular.
 
-ADD: FIGURE
+ADD: FIGURE (Initial Streaming)
 
 \subsubsection{Stream Learning Algorithms}
 
@@ -159,13 +159,11 @@ The workaround we found was having the driver program done the heavy lifting of 
 
 All four variants of the learning algorithm has a similar structure. For the explicit-detection approaches what changes from one to another is the triggering logic of the model update procedure. Although the forth variant, the incremental updates, looks pretty different, when the details are abstracted away, it follows the same steps as the other ones. Therefore, these all four variants could be depicted in one general picture.
 
+ADD: Figure (Stream Learning)
+
+In the figure, we see that RSS archive file which is streamed by the initial streamer application whose details are discussed in the previous section is read into a collection located at the driver program. And then, from this collection the RSS items are drawn in batches (one or multiple RSS items in one batch, parametric) at every iteration of some loop that simulates the Streaming logic. The batches here corresponds to the discretised batches in Spark Streaming. Then, we have a 'duplicate' operation in the diagram which is a depiction of of making copies of batch objects that is implemented by a simple assignment expression in Java. Then we have a TrainingUDF which is pictured as black box in this abstract picture as this is the component different variants of stream learners differ from each other. First three variant, 
 
 
-\begin{figure}[htbp]
-  \centering
-  \includegraphics[scale=0.56]{VisualisationOfflineWorkflow.pdf}
-  \caption{Offline Workflow}
-\end{figure}
 
 \subsection{Evaluation}
 %write here
