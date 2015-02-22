@@ -2,9 +2,9 @@
 \usepackage{nips14submit_e,times}
 \usepackage{hyperref}
 \usepackage{url}
-%\documentstyle[nips14submit_09,times,art10]{article} % For LaTeX 2.09
-
-
+\usepackage{listings}
+\usepackage{color}
+\usepackage{graphicx}
 \title{A Comparison of Online learning Na\"ive Bayes Classifier on RSS Feeds using SPARK}
 
 
@@ -26,7 +26,7 @@ Franziska Adler \\
             {\normalfont\normalsize\bfseries}}
 \makeatother
 \setcounter{secnumdepth}{4} % how many sectioning levels to assign numbers to
-\setcounter{tocdepth}{4}    % how many sectioning levels to show in ToC
+%\setcounter{tocdepth}{4}    % how many sectioning levels to show in ToC
 \begin{document}
 
 
@@ -72,9 +72,6 @@ Different ways of handling concept drifts are proposed in literature \cite[p. 5]
 
 For this project, we use three different stream learning approaches. They all do batch-based processing using a single classifier for explicit concept drift detection. In terms of classifier-dependency of the concept-drift handling methods, two of them implement classifier-free methods for detection and taking action for the drifting concepts and one of them employs classifier-specific approach. Details regarding these different stream learning approaches we use are discussed in the Methods subsection.
 
-First level headings are lower case (except for first word and proper nouns),
-flush left, bold and in point size 12. One line space before the first level
-heading and 1/2~line space after the first level heading.
 
 \subsubsection{Streaming}
 In order to deal with the continuous nature of the data, traditional programming primitives are not of much help and mostly distracting. In order to make programmers’s job easier, libraries providing higher level abstractions for stream data are introduced. These libraries usually discretise the continuous input stream into batches and give the programmer a local view of the stream allowing him/her to grab only the data from one batch at a time. Hence, programmer writes code to handle one batch of the discretised stream and the streaming library run this piece of code on all the batches sequentially as they arrive. For instance, programmer wants to use a flatmap function and he writes only one line of code where the flatmap function is called and the streaming library executes this line many times for each arriving batch as if in a loop. This abstraction takes care of all the chore of updating the data structures storing batch elements and bookkeeping loop variables to implement repetitive execution logic, letting the programmer concentrate only on the streaming logic of the application. 
@@ -89,45 +86,41 @@ With the Internet data availability seems not to constitute a problem anymore. A
 
 As mentioned previously in the report, the major aim of the project is to compare different model update techniques implemented as the variants of the same Naive Bayesian Classifier in terms of their capability in adapting/capturing concept drifts. For this purpose, we evaluate one offline (as a baseline) and three online classifiers.
 \subsubsection{Offline Learning}
-%write here
-TODO: Franziska
+Offline learning assumes the access to all training points at once. From this initial training set the model is constructed to classify new data instances. This means after the training phase the learning is finished and in case of na\"ive Bayes  the probabilities which are the basis for the decision rule are fixed.  In contrast online learning is performing model construction with new datapoints arriving. 
+
+
 \subsubsection{Online Learning}
 
 We consider three different online learning approaches two of which are slight variations of each other and both implement explicit-detection of concept drifts. As for, the third one, it is considerably different and it features implicit-detection methods for concept drifts. However, all three have a set of  features in common. To be more specific, they all are single-classifier approaches and all utilise a 'sliding window' of recent data points to be used for the potential updates of the predictive model. What first two approaches differ is the way predictive model updates are triggered. The first approach, called the bruteforce update, rebuilds the model at fixed interval by using the data items stored in the sliding window. The second variation called, error-triggered updates, waits for accuracy rate to go below a certain threshold which is hardcoded. Third model, called incremental updates, implements a different model update scheme than first two. Instead of rebuilding the model with recent data, it incorporate the recent data coming from the last window into the model. While doing so, it scales the feature vectors of the recent data by the learning rate and the past data by the value that learning rate subtracted by one. Learning rate simply specifies the amount of adaptation to the recent items to be done and the mount of 'forgetting' of the past models. Use of a dynamic learning rate elevated by increasing rates of error enables the incremental updates approach to 'silently' detect concept drifts and take the recent data into more consideration than the past by scaling down the feature vectors of the past models and taking the feature-vectors of the recent items almost as they are. One crucial point worth mentioning about incremental-updates model, it continues the training of the classifier with every incoming batch of data no matter what the learning rate is at the moment. This makes the training and test set simply perfectly overlap onto each other. In other words, every incoming item is used for updating the model after the prediction is done and the immediate feedback on the outcome of the prediction is received. 
 
 All these three models perfectly exhibit the textbook definition of online learning behaviour: alternating between exploitation and exploration although the lengths and the data sets used for their respective exploitation and exploration intervals differ substantially due to the their different underlying update mechanism which are explained above.
 
-
-\subsection{Evaluation Measurse}
-%write here
-texttexttext
-
 \section{Empirics}
 \subsection{Data}
 %write here
 Data we are using is basically RSS(Really simple syndication) items streamed from BBC. An RSS Item is combination of some tags describing the content of the feed item and some meta-data about it such as publication date, url, etc. in XML structure. An example RSS item is given below.
 
-%\lstset{
-%    language=xml,
-%    tabsize=3,
-%    %frame=lines,
-%    caption=An Example RSS Item,
-%    label=code:sample,
-%    frame=shadowbox,
-%    rulesepcolor=\color{gray},
-%    xleftmargin=20pt,
-%    framexleftmargin=15pt,
-%    keywordstyle=\color{blue}\bf,
-%    commentstyle=\color{OliveGreen},
-%    stringstyle=\color{black},
-%    numbers=none,
-%    numberstyle=\tiny,
-%    numbersep=5pt,
-%    breaklines=true,
-%    showstringspaces=false,
-%    basicstyle=\footnotesize,
-%    emph={food,name,price},emphstyle={\color{magenta}}}
-%    \lstinputlisting{sample_feeditem.xml}.
+\lstset{
+    language=xml,
+    tabsize=3,
+    %frame=lines,
+    caption=An Example RSS Item,
+    label=code:sample,
+    frame=shadowbox,
+    rulesepcolor=\color{gray},
+    xleftmargin=20pt,
+    framexleftmargin=15pt,
+    keywordstyle=\color{blue}\bf,
+    commentstyle=\color{OliveGreen},
+    stringstyle=\color{black},
+    numbers=none,
+    numberstyle=\tiny,
+    numbersep=5pt,
+    breaklines=true,
+    showstringspaces=false,
+    basicstyle=\footnotesize,
+    emph={food,name,price},emphstyle={\color{magenta}}}
+    \lstinputlisting{sample_feeditem.xml}.
 
 Here, we are only interested in what is in the publication date, description and title tags. Publication date is crucial for computing interval-based prediction accuracy metrics and in-batch ordering. Description and title constitute the document we want to categorise in our case as we want to mine RSS feed items as opposed to mining the news articles themselves. Therefore, there is no need for fetching the actual article's text.
 
@@ -143,35 +136,118 @@ TODO: Something about Streaming
 TODO: MLlib if used
 
 
-\subsection{Data}
-%write here
-texttexttext
 
-\newpage
 \subsection{Implementation}
 %write here
 
-For streaming:
-Since our feed classifier is essentially a streaming application, we decided to use a streaming library. In particular, we employed Apache Spark Streaming assuming that it is nicely integrable into Apache Spark Core which provides distributed systems architecture and facilities and Apache Spark providing the machine learning libraries. U
-However, it introduces some difficulties as well such as lack of state variables that can be easily updated although there are ways to accomplish it such as state update methods provided in the streaming API, However, this particular method
+Our implementation effort can be broken in two main parts namely initial streaming and the implementation of the stream learning algorithms.
 
-%\begin{figure}[htbp]
-%  \centering
-%  \includegraphics[scale=0.56]{VisualisationOfflineWorkflow.pdf}
-%  \caption{Offline Workflow}
-%\end{figure}
+\subsubsection{Initial streaming}
 
-\subsection{Evaluation}
-%write here
-texttexttext
+The starting point for the implementation was designing and implementing a 'hook' for stream data. Usually, it is trivial to feed Spark Streaming with a stream but in our case we had to be careful with the amount of data that we can process for the observations in the limited timeframe would be left after completing the implementation  specially considering that we aim to detect concept drifts, we were compelled to find a way to facilitate the data being streamed while developing the application. To this end, we decided to first archive the stream data, then stream this data for the second time through one of the local ports on the development environment and finally let the streaming application consume this manually streamed data once the development is complete. This way, we could take the time needed for the development and meanwhile did not lose any data since the very first day we conceived the idea of mining news feeds items for this project. Below diagram describes how this initial handling of the data is realised. 
 
-\subsection{Results}
-%write here
-texttexttext
+In the figure, Spark Streaming discretises the incoming stream by breaking the data into batches to be processed in first in first out order. We simply run this flow which also does after doing in-batch ordering of items according to their timestamps to accumulate a txt file for the RSS archive to be stremed later. Additionally, this streaming also creates a dictionary, everytime it runs inserts new vocabulary into the dictionary along with their associated hashcode which serves as the unique identifiers for the terms. In the source code, implementation of the Initial Streaming tasks can be found in rss.categorizer.util package, RSS Fetcher.java and FeedRefiner in particular.
+
+ADD: FIGURE (Initial Streaming)
+
+\subsubsection{Stream Learning Algorithms}
+
+For the implementation of the stream learning algorithms as the core of our feed categorised application, we first attempted to use Spark Streaming and NaiveBayesian classifier provided by Spark MLlib in combination to facilitate convenient streaming abstractions of Spark Streaming library and also use the NaiveBayesian classifier which is a very flexible and customisable implementation of the algorithm and allows the use of different feature vectors other than term-frequency. This approach failed due to a very strict restrictions on shared state variables in Apache Spark. More specifically, in order to implement stream learning algorithms which does explicit-detection for conceptual drifts, some state variable needs to maintained which the control flow of the stream algorithm depends on. This means that there needs to be a globally shared state variable which is broadcasted whenever the state variables are updated. Apache Spark does not allow this to happen. For example, in the case of error-triggered update approach, there should be a boolean variable that becomes true whenever error rate, which can be maintained by means of an accumulator, goes below the threshold. A potential solution to this problem was to use the updateState function provided in Spark Streaming. Although this appears to be specifically designed for overcoming the difficulty of keeping state variables with the streaming abstraction which essentially treats every line of code as statements in a loop, this does not solve our problem with not being able to retain a single state variable. This is because, what updateState function offers is to join the current stream batch onto the past one and in this fashion build an incrementally accumulated and key-indexed RDDs which is not suitable model for storing a single-variable state. 
+ 
+The workaround we found was having the driver program done the heavy lifting of the tasks of model building or model updating after collecting the RDD items partitioned across the nodes of the cluster by using the 'collect' function. This way, a state variable can be stored in the driver program and can be updated easily. However, this only does not fully solve the whole problem. This is because, the function 'collect' can be only used for RDDs. However, with the streaming enabled, instead of RDDs, we only can get out hands on the 'sequence' of RDDs. After having tried hard to get this combination of three different libraries namely Spark Core, Spark Streaming and Spark MLlib and experienced the abovementioned technical difficulties which can be arguably caused by either the design choices of the libraries or the current incompatibilities between them, and also having considered that the main challenge of the project is supposed to be rather on the study of the relevant concepts and the experiments rather than a specific library, we decided to give up on using Spark Streaming and 'simulate' the streaming behaviour by traditional programming primitives such as a plain loop which draws a batch of the labeled points in every iteration from a file.
+
+All four variants of the learning algorithm has a similar structure. For the explicit-detection approaches what changes from one to another is the triggering logic of the model update procedure. Although the forth variant, the incremental updates, looks pretty different, when the details are abstracted away, it follows the same steps as the other ones. Therefore, these all four variants could be depicted in one general picture.
+
+ADD: Figure (Stream Learning)
+
+In the figure, we see that RSS archive file which is streamed by the initial streamer application whose details are discussed in the previous section is read into a collection located at the driver program. And then, from this collection the RSS items are drawn in batches (one or multiple RSS items in one batch, parametric) at every iteration of some loop that simulates the Streaming logic. The batches here corresponds to the discretised batches in Spark Streaming. Then, for the training and prediction, in order to create data points, we have DataPointGeneration component. It convertS feed items into labeled data points where label is the category of the individual RSS Item which is obtained by the hardcoded mapping of Feed URL and their corresponding variables of double type that represents individual topic categories. Furthermore, the datapoint part of the labeled datapoint consists of a sparse vector of features indices and feature values which are both represented as an array. Feature indices are simply obtained from the dictionary which is basically a mapping between the dictionary term to their corresponding hashcode. For each term occurring in the title or the description of the feed item, its corresponding hashcode is fetched from the dictionary. As for the feature values, term-frequency of the items are used assuming feed items title and description constitute a document . Then we have a TrainingUDF which is pictured as black box in this abstract picture as this is the component where different variants of stream learners differ from each other. First three variant maintains a sliding window of a number of batches where this number is a parameter. Whenever a training is triggered, the training data in this sliding window is used. In the forth variant, incremental updates, this sliding window always contains always the most recent batch. It is worth mentioning that, this training UDF is only triggered by some state variables which are controlled by a logic which is different for every variant. So, when it is fired, the part of the collection of RSS Items whose indices falls within the sliding windows indices are paralleled via the 'parallelise' call provided by Spark Core and then used for model training or model update purposes whose details again up to the model update variant that is used. After the parallelisation of the training dataset, parallelised RDDs can be passed to the MLlib's Naive Bayesian model building functions for training. After the data point generation, the initial training is the same for every variant. However, after the initial model is create, when the trainingUDF is fired again, all the variants except for the the incremental model trivially retrains the model based on the data in the training window. As for the incremental model, it 'updates' the model by incorporating the recent items  from the training window into the bayesian model. However, instead of using the term-frequency for feature values, the forth variant uses TF multiplied by the learning rate for the new training points and also overwrites the feature values of the vectors of the training data by multiplying by learning rate subtracted from 1. This way the Bayesian model is incrementally updated. In the case, the trainingUDF is not fired, it just does not do any training although it still updates its training window as more items arrive. Following the other branch from the data generation point, for every data point the prediction method provided by the NaiveBayes model object is called and predictions are obtained. Then, there is predictionUDF that calculates the cummulative accuracy rate as it receives the predictions and labels by simply checking for equality. Moreover, predictionUDF manages a very crucial task: it dynamically controls all the state variables which are used for triggering of trainingUDF and changing the learning rate for the incremental updates variant.
+
+\subsection{State Variables}
+Each variant has a different implementation of TrainingUDF triggering functionality and it is controlled by a boolean state variable. In the batch model, there is no need for training after the initial training, hence there is no triggering of TrainingUDF. In the case of bruteforce update variant, predictionUDF fires the trainingUDF at the fixed intervals which is a parameter for the stream learner implementation. For the error-triggered updates variant, predictionUDF fires the trainingUDF whenever the cumulative accuracy it computes goes below a threshold which is again a parameter that can be tuned by hand. As for the incremental updates model, there is again no need for triggering of the training in the incremental updates model since TrainingUDF of it is always on, it always updates the NaiveBayesModel. This is a direct implication of the implicit concept drift detection behaviour of this variant.
+
+Learning rate variable is used only for the incremental updates variant. For this, we designed a function that converges to 0 as the prediction accuracy improves and to 1 as it decreases. So, after every batch, we know the change in the cumulative accuracy and if there is an increase in the overall accuracy, we increase the current domain index of the learning rate function by a step size and read the range value which is the learning rate itself. The functions range interval is the [0,1] and domain interval is the Java representation of all positive rational numbers. The function is depicted below for the domain interval [0,50]
+
+
+
+\subsection{Evaluation Setup}
+
+
+\subsubsection*{Evaluation Measurse}
+
+To detect concept drift different error measures like expected error rate - or in case of dealing with ensemble classifiers - error decomposition can be used to observe changes in the probabilities which might relate to concept drift.\cite{Gao07ageneral}  Since we are using MLlib and it is hard to reach the inner properties of the computed model to compute elaborate measures we took cumulative accuracy as a very simple evaluation measure.  Accuracy is the  proportion of correctly predicted labels among all predictions. We therefore computed  successively the accurary with every new data point as cumulative accuracy over all datapoints and the cumulative accuracy per interval respectivly within a single test set.
+
+
+\subsubsection*{Offline classifier}
+In the time of three weeks we received 3659 data points. This rather small amount of data restriced us in choosing training and test set size since we are oberserving the classification behavior over time. For each approach our initial training phase contains 600 data instances which equates to the first three days of streaming news feeds. 
+
+Our first approach - the offline model - is used as a reference model. After the training phase we have chosen three disjoint test sets with 1000 datapoints each as seen in the graphic below to retrieve possible performance changes.  Our size of training and test set differes from other test setups which usually take a 50:50 to 80:20 ratio for set sizes.  Of course the classifier performs better the more training data is available, but since we are using sliding window approaches for the online classification with limited capacity we  have chosen this split for compatibility in the comparison with the different scenarios and  with the larger testset to get a more accurate error estimation.  Due to this experimental setup we are not expecting a very high perfomance accurancy in general but to detect changes in performance which could indicate some sort of concept drift.
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[scale=0.28]{./time_models/OfflineModel.png}
+  \caption{Offline setup}
+\end{figure}
+\subsubsection*{Bruteforce}
+As mentioned the second approach - the bruteforce method -  takes a sliding window of 600 data instances. We applied retraining phase three times and after every training a testphase followed to measure the performance of the previous training.  The testsets in this scenario are the same sets as used in the offline classification and contain 1000 data points. Except the last test set which will not be taken into further consideration.
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[scale=0.28]{./time_models/BruteforceModel.png}
+  \caption{Bruteforce setup}
+\end{figure}
+\subsubsection*{Error-triggered}
+As a variation of the bruteforce model with a fixed retraining  interval we used a threshold triggered retraining which  will rebuild the model out of the sliding window as soon as the accuracy of the model goes below a certain threshold. The window size of
+the error-triggered model consists as well of 600 data points like in the previous models. We set the accuracy threshold to 63\% which seemed to be a reasonable choice due to our observations with the offline method. A sanity window of test points ensures that at least 300 new data points arrive before prematurely throwing out the rebuilt model. That means after every training at least 300 data points will be used to compute the performance and compare it to the threshold before on that basis the decision for retraining or not is made. Experimenting with smaller sanity windows lead to constant rebuilding. With the chosen sanity window rebuilding is executed six times.
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[scale=0.25]{./time_models/Errortriggered.png}
+  \caption{Error-triggered setup}
+\end{figure}
+\subsubsection*{Incremental}
+In the incremental model, unlike the other update models, following an initial training-only phase, all the incoming stream items are always used for training right after the prediction. So, this way the immediate information whether the prediction was good or bad can be used for improving the model on the fly. In other words, predictive model building and testing phases perfectly overlap in incremental model update method. We used this to achieve a real-time response to the changes in the data arguably making the text mining application more resilient to the conceptual drifts. The initial training size of 600 is used for this model update method as well.
+
+\subsection{Evaluation results}
+
+The overall cumulative accuracy of the offline classifier is around 60\% as visualised as a yellow line in the graphic below. The result is plausible since we did not deal with bias or variance and therefore weight the features nor preprocessed the data like using a stemmer. The per interval cumulative accuracy is shown alternating in green and blue. The first oscillations of the interval accuracys can not be taken into account which are approximately the first 250 - 300 test items since cumulative accuracy needs at least some prediction values to be reliable. As explained before the prediction model was computed once in the the first three days of receiving data points and applied to four disjoint testsets which were received in a later point of time. The training items are not included in the graphic, it starts with the first test point:
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[scale=0.6]{./plots/batchPlot.png}
+  \caption{Performance of offline learning with received test items over time}
+\end{figure}
+
+While the first two intervals do not differ much the third interval shows a worse performance. This means the model which was computed in the beginning of our streaming does not fit very good to test items in a two weeks later point of time and  might indicate some sort of concept drift.\\
+
+The results for the bruteforce version which has the same testing setup but retrains the model after each test phase. The first test set will give the same results as the offline learning since they are both computed in the same way and the first retraining phase takes place after 1000 new instances arrived. The overall accuracies differ from the offline version by increased results for the bruteforce model after the first retraining around 63\% to 64\% of overall accuracy: 
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[scale=0.5]{./plots/overallBatchBruteforce.png}
+  \caption{Overall accuracy for batch and bruteforce models after the first retraining}
+\end{figure}
+
+A one-to-one comparison of the different intervals of both models shows the following: The first retraining at data point 1000 improves the performance, the second retraining at test item 2000 does not perform as good as the first retraining on the following test set but is still better than the offline model. We assume that we observed concept drift, but the interval size might not have been chosen well since the accuracy drops after the second retraining. The second retraining might have taken place to soon, while the first retraining seemed approximatly right in time. Nevertheless we can state that the bruteforce method does  perfom better than the offline method even though retraining was chosen more or less randomly after 1000 test data points.
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[scale=0.6]{./plots/bruteforce_batch.png}
+  \caption{Per interval accuracy for offline and bruteforce method}
+\end{figure}
+
+To error-triggered model should handle this problem of fixed retraining phases and give us better estimation when retraining should be done. Applying a threshold of 63\% percent as indication of retraining since we do not want to perform worse than the bruteforce method results in this graphic with the interval accuracies. It starts at 300 received testpoints which is the first retraining of the error-triggered model due to the sanity window:
+ \begin{figure}[htbp]
+  \centering
+  \includegraphics[scale=0.6]{./plots/errortriggered_bruteforce.png}
+  \caption{Per interval accuracy for error-triggered and bruteforce method}
+\end{figure}
+
+As seen here the retraining of the error-triggered approach takes place two more times at test items 600 and 900 which is the sanity window size. It  followes by a stable model for over 1300 incoming test items and is retrained again two times. In this visualisation we have to consider that the test sets of the error-triggered models are much smaller than the bruteforce ones. However, the performance of the error-triggered models are not neccessarily much better than the bruteforce models except in the last interval starting at test items 2600. When applying smaller sanity windows constant retraining is performed due to the smaller test sets. The stable phase of the error-triggered approach starts at test item 900 just 100 data points before the bruteforce retraining is done but decreases shortly before 1000 nearly to the threshold. This drop is displayed as a less accumulative interval accuracy within this stable phase than the bruteforce approach. This means retraining the model in this point of time around receiving 1000 test items leads to a better prediction for a longer period. This might be caused by newsfeeds which are related to a certain topic more often and are included in training and test set. Out of this phase topic distribution might be broader and a classifier with 600 training items and 5 classes does just not perfom over 63\% especially when data points are as sparse as those we used. For a profound analysis accuracy is also not the way to go.  
+
+Incremental as upper bound here?
+
+\subsection{Conclusion}
+- more training items, more items in general cause we are wanted to deal with large scale problems.. was not doable in the given time
+- parameter estimation important
+- tradeoff efficency execution of retraining and performance
+- combination, ensemble classifier consideration
 
 \subsection{Summary}
-%write here
-texttexttext
+what we wanted to do, which main problems we encountered, what we learned
 
 \bibliographystyle{unsrt}
 \small{
