@@ -9,8 +9,8 @@
 
 
 \author{
-Anil Palla\\
-\texttt{pala@campus.tu-berlin.de} \\
+Ahmet Anil Pala\\
+\texttt{aanilpala@mailbox.tu-berlin.de} \\
 \And
 Franziska Adler \\
 \texttt{minza@mailbox.tu-berlin.de} \\
@@ -172,7 +172,11 @@ In the case of bruteforce update variant, predictionUDF fires the trainingUDF at
 
 Learning rate variable is used only for the incremental updates variant. For this, we designed a function that converges to 0 as the prediction accuracy improves and to 1 as it decreases. So, after every batch, we know the change in the cumulative accuracy and if there is an increase in the overall accuracy, we increase the current domain index of the learning rate function by a step size and read the range value which is the learning rate itself. The functions range interval is the [0,1] and domain interval is the Java representation of all positive rational numbers. The function is depicted below for the domain interval [0,50]
 
-
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[scale=0.54]{./figures/learning_rate_function.png}
+  \caption{Learning Rate Function}
+\end{figure}
 
 \subsection{Evaluation Setup}
 
@@ -229,7 +233,7 @@ The results for the bruteforce version which has the same testing setup but retr
   \includegraphics[scale=0.5]{./plots/overallBatchBruteforce.png}
   \caption{Overall accuracy for batch and bruteforce models after the first retraining}
 \end{figure}
-A one-to-one comparison of the different intervals of both models shows the following: The first retraining at data point 1000 improves the performance, the second retraining at test item 2000 does not perform as good as the first retraining on the following test set but is still better than the offline model. We assume that we observed concept drift, but the interval size might not have been chosen well since the accuracy drops after the second retraining. The second retraining might have taken place to soon, while the first retraining seemed approxematly right in time. Nevertheless we can state that the bruteforce method does  perfom better than the offline method even though retraining was chosen more or less randomly after 1000 test data points.
+A one-to-one comparison of the different intervals of both models shows the following: The first retraining at data point 1000 improves the performance, the second retraining at test item 2000 does not perform as good as the first retraining on the following test set but is still better than the offline model. We assume that we observed concept drift, but the interval size might not have been chosen well since the accuracy drops after the second retraining. The second retraining might have taken place to soon, while the first retraining seemed approximately right in time. Nevertheless we can state that the bruteforce method does  perform better than the offline method even though retraining was chosen more or less randomly after 1000 test data points.
 
 \begin{figure}[htbp]
   \centering
@@ -244,10 +248,17 @@ To error-triggered model should handle this problem of fixed retraining phases a
   \caption{Per interval accuracy for error-triggered and bruteforce method}
 \end{figure}
 
-As seen here the retraining of the error-triggered approach takes place two more times at test items 600 and 900 which is the sanity window size. It  follows by a stable model for over 1300 incoming test items and is retrained again two times. In this visualisation we have to consider that the test sets of the error-triggered models are much smaller than the bruteforce ones. However, the performance of the error-triggered models are not necessarily much better than the bruteforce models except in the last interval starting at test items 2600. When applying smaller sanity windows constant retraining is performed due to the smaller test sets. The stable phase of the error-triggered approach starts at test item 900 just 100 data points before the bruteforce retraining is done but decreases shortly before 1000 nearly to the threshold. This drop is displayed as a less cumulative interval accuracy within this stable phase than the bruteforce approach. This means retraining the model in this point of time around receiving 1000 test items leads to a better prediction for a longer period. This might be caused by news feeds which are related to a certain topic more often and are included in training and test set. Out of this phase topic distribution might be broader and a classifier with 600 training items and 5 classes does just not perfome over 63\% especially when data points are as sparse as those we used. For a profound analysis accuracy is also not the way to go.  
+As seen here the retraining of the error-triggered approach takes place two more times at test items 600 and 900 which is the sanity window size. It  follows by a stable model for over 1300 incoming test items and is retrained again two times. In this visualisation we have to consider that the test sets of the error-triggered models are much smaller than the bruteforce ones. However, the performance of the error-triggered models are not necessarily much better than the bruteforce models except in the last interval starting at test items 2600. When applying smaller sanity windows constant retraining is performed due to the smaller test sets. The stable phase of the error-triggered approach starts at test item 900 just 100 data points before the bruteforce retraining is done but decreases shortly before 1000 nearly to the threshold. This drop is displayed as a less cumulative interval accuracy within this stable phase than the bruteforce approach. This means retraining the model in this point of time around receiving 1000 test items leads to a better prediction for a longer period. This might be caused by news feeds which are related to a certain topic more often and are included in training and test set. Out of this phase topic distribution might be broader and a classifier with 600 training items and 5 classes does just not perform over 63\% especially when data points are as sparse as those we used. For a profound analysis accuracy is also not the way to go.  
+
+ \begin{figure}[htbp]
+  \centering
+  \includegraphics[scale=0.5]{./plots/incremental_plot.png}
+  \caption{Incremental update model accuracy and learning rate change}
+\end{figure}
+
 
 %TODO: Anil incremental evaluation
-Incremental as upper bound here?
+As for incremental approach, results we obtained indicates that it produces the best accuracy among other variants, going beyond 70\%. This is no surprise since its learning mechanism is totally different than periodic or non-periodic rebuilding approaches in a better way. Unlike them, the incremental approach never explicitly throws out the old training data and as a result of this possibility having an undertrained updated/retrained classifier is avoided unless learning rate goes to the the upper extreme value of 1 which never happened. In our experiments, we tracked the change of learning rate as well as the cumulative accuracy. This is plotted in the graph above. We see that, initially both accuracy and learning rate fluctuate around 65 \% and 0.05 respectively. Then, accuracy starts to improve almost monotonically and meanwhile learning starts oscillating between 0 and 0.005   Three initial peaks that we observe in the learning function looks correlated with three times when accuracy sharply decreased. This is definitely an indicator of the times when the predictive model trained until the moment got somewhat less accurate than before and needs to be updated more aggressively by a higher learning rate. However, it is hard to say this might or might not be linked with a concept drift because except for the first drop in the accuracy all the rest is very minor and might be caused by some noise or outliers in the data.
 
 
 
